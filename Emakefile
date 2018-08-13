@@ -1,0 +1,12 @@
+{
+	[
+		"src/*"
+	],
+	[
+		{i,"include"},
+		{outdir,"ebin"},
+		report,
+		tuple_calls,
+		compressed
+	]
+}.

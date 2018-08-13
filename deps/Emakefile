@@ -1,0 +1,14 @@
+{
+	[
+		"mochiweb/src/*",
+		"mysql/src/*"
+	],
+	[
+		{i,"mochiweb/include"},
+		{i,"mysql/include"},
+		{outdir,"ebin"},
+		report,
+		tuple_calls,
+		compressed
+	]
+}.
