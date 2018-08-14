@@ -1,1 +1,1 @@
-erl -s make all -s erlang halt
+erl -s make all

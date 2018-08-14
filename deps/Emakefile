@@ -1,7 +1,9 @@
 {
 	[
 		"mochiweb/src/*",
-		"mysql/src/*"
+		"mysql/src/*",
+		"ejson/src/*",
+		"jsx/src/*"
 	],
 	[
 		{i,"mochiweb/include"},

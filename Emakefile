@@ -7,6 +7,7 @@
 		{outdir,"ebin"},
 		report,
 		tuple_calls,
-		compressed
+		compressed,
+		{parse_transform, ejson_trans}
 	]
 }.
