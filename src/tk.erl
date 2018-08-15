@@ -22,7 +22,7 @@ start()->
 		end
 		end,
 	lists:foreach(StartFunc,[
-		kernel,stdlib,crypto,inets,asn1,public_key,ssl,compiler,xmerl,syntax_tools,jsx,
+		kernel,stdlib,crypto,inets,asn1,public_key,ssl,compiler,xmerl,syntax_tools,jsx,logger,
 	mochiweb,ejson]).
 	
 run() ->
@@ -30,20 +30,12 @@ run() ->
 	mochiweb_http:start([{loop,Loopfun}]).
 
 web_loop(Req) ->
-%%	io:format("Req = ~p~n",[Req]),
  "/" ++ Path = Req:get(path),
 	case Req:get(method) of
 		Method when Method =:= 'GET'; Method =:= 'HEAD' ->
 			case Path of
 				_ ->
-					Json = Req:parse_qs(),
-					io:format("Json=~p~n",[Json]),
-					Jim = #person{
-						name = "Jim",
-						birth_year = 1967,
-						projects = [#project{}]},
-					{ok, Json2} = to_json(Jim),
-					Req:ok({"text/html",Json2})
+					web_util:route(Req)
 			end;
 		'POST' ->
 			case Path of

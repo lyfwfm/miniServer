@@ -1,6 +1,7 @@
 {
 	[
-		"src/*"
+		"src/*",
+		"src/logger/*"
 	],
 	[
 		{i,"include"},
