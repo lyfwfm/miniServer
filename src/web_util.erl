@@ -16,7 +16,7 @@
 
 send(Req, Ret, Msg) ->
 	{ok, Json} = to_json(Msg),
-	RetTuple = [{"ret":integer_to_list(Ret)}],
+	RetTuple = [{"ret:"++integer_to_list(Ret)}],
 	Json2=list_to_tuple(RetTuple++tuple_to_list(Json)),
 	Req:ok({"text/html",Json2}).
 send(Req, Json) ->

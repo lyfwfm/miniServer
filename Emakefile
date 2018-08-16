@@ -1,7 +1,8 @@
 {
 	[
 		"src/*",
-		"src/logger/*"
+		"src/logger/*",
+		"src/db/*"
 	],
 	[
 		{i,"include"},

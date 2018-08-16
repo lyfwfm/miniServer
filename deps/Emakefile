@@ -1,7 +1,7 @@
 {
 	[
 		"mochiweb/src/*",
-		"mysql/src/*",
+		"emysql/*",
 		"ejson/src/*",
 		"jsx/src/*"
 	],

@@ -19,6 +19,22 @@
 
 
 
+-define(DB, tk).
+-define(ONE_DAY_SECONDS, 86400).
+-define(ONE_HOUR_SECONDS,3600).
+-define(TEN_MINUTES_SECONDS,600).
+
+-define(CATCH(Expression), (
+	try Expression
+	catch
+		ErrType:Reason ->
+			?ERR("ErrType:~1000p, ErrReason:~1000p, Expression=~s",[ErrType, Reason, ??Expression]),
+			{'EXIT',{ErrType, Reason}}
+	end
+)).
+-define(TRUE, true).
+-define(FALSE, false).
+
 
 %%-------------------------------------------------------------------------
 %%{0, no_log, "No log"}

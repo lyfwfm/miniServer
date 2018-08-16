@@ -62,8 +62,7 @@ set2(LogLevel, Flags) ->
         code:load_binary(Mod, ?LOGMODULE ++ ".erl", Code)
     catch
         Type:Error -> 
-            Trace = erlang:get_stacktrace(),
-            io:format("Error compiling logger (~1000000000p): ~p, StackTrace = ~1000000000p ~n", [Type, Error, Trace])
+            io:format("Error compiling logger (~1000000000p): ~p ~n", [Type, Error])
     end.
 
 level_to_integer(Level) ->
