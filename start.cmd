@@ -1,1 +1,1 @@
-erl -pa ebin deps/ebin -s tk start -s tk run
+erl -pa ebin deps/ebin app -s tk start

@@ -56,6 +56,6 @@ testJson() ->
 		birth_year = 1967,
 		projects = [#project{}]},
 	{ok, Json} = to_json(Jim),
-	io:format("~s~n", [Json]),
+	io:format("Json=~s~n", [Json]),
 	{ok, Person} = from_json(Json, person),
 	io:format("Person=~p~n",[Person]).  %% Specify the rule name here

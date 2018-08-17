@@ -7,13 +7,27 @@
 %%% Created : 15. 八月 2018 17:32
 %%%-------------------------------------------------------------------
 -author("chenlong").
+-include("msg.hrl").
 
 -define(UNDEFINED, undefined).
--define(SUCCESS, 0).
+-define(SUCCESS, success).
 
-
+-define(FISH_STATE_IDLE,0).
+-define(FISH_STATE_WORKING,1).
+-record(fish,{
+	fishID=0,%%鱼的唯一ID
+	cfgID=0,
+	state=?FISH_STATE_IDLE
+}).
 -record(role,{
-	roleName=""
+	deviceID=0,%%玩家设备ID 作为唯一ID
+	roleName="",
+	money=0,
+	gold=0,
+	fishList=[],%%玩家所有鱼的情况[#fish{}]
+	loginDays=0,%%连续登陆的天数
+	unlockFishCfgID=0,
+	fishBuyList=[]%%玩家购买鱼的情况[{CfgID,Count}]
 }).
 -json({role,{string,"name"}}).
 
@@ -68,6 +82,8 @@
 -define(DEBUG(Format, Args), logger:debug_msg(?MODULE,?LINE, Format, Args, [{module, ?MODULE}])).
 
 %% 错误信息
--define(ERR(Format), logger:error_msg(?MODULE,?LINE, Format, [])).
--define(ERR(Format, Args), logger:error_msg(?MODULE,?LINE, Format, Args)).
+%%-define(ERR(Format), logger:error_msg(?MODULE,?LINE, Format, [])).
+%%-define(ERR(Format, Args), logger:error_msg(?MODULE,?LINE, Format, Args)).
+-define(ERR(Format), error_logger:error_msg(Format, [])).
+-define(ERR(Format, Args), error_logger:error_msg(Format, Args)).
 %%-------------------------------------------------------------------------

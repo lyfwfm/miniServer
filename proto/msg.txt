@@ -1,0 +1,3 @@
+[msg_fish,{id,number},{cfg_id,number},{isWorking,boolean}].
+[msg_fish_buy,{cfg_id,number},{buy_count,number}].
+[msg_login,{userName,string},{packageFishlist,list,msg_fish},{gold,number},{offline_gold,number},{login_days,number},{unlocked_fishes,number},{fish_buy_list,list,msg_fish_buy}].

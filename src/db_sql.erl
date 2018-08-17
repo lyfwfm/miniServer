@@ -19,6 +19,69 @@
 %%	{{Y, M, _}, _} = erlang:localtime(),
 %%	lists:flatten(io_lib:format("~w_~w_~w", [TableName,Y,M])).
 
+test_select(ID) ->
+	Sql = io_lib:format("select * from gRole where roleID = ~w",[ID]),
+	get_row(Sql).
+test_insert(ID,Name) ->
+	Sql = io_lib:format("replace into gRole values (~w,~s)",[ID,quote(Name)]),
+	sql_execute_with_log(Sql).
+
+getRole(RoleID) ->
+	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
+	case get_row(Sql) of
+		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList] ->
+			#role{deviceID = RoleID,roleName = Name,money = Money,gold = Gold,fishList = to_term(FishList),
+				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList)};
+		_ -> #role{deviceID = RoleID}
+	end.
+setRole(Role) ->
+	Sql = io_lib:format("replace into gRole values (~w,~s,~w,~w,~s,~w,~w,~s)",
+		[
+			Role#role.deviceID,Role#role.roleName,
+			Role#role.money,Role#role.gold,
+			to_bin(Role#role.fishList),Role#role.loginDays,
+			Role#role.unlockFishCfgID,to_bin(Role#role.fishBuyList)
+		]),
+	sql_execute_with_log(Sql).
+isRoleExist(RoleID)->
+	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
+	get_row(Sql) =/= [].
+%%-------------钓鱼------------------
+%%getPlayerFishing(RoleID) ->
+%%	Sql = io_lib:format("select * from gfishing where roleID = ~w",[RoleID]),
+%%	get_row(Sql).
+%%
+%%setPlayerFishing(RoleID, #playerFishing{}=PlayerFishing) ->
+%%	Sql = io_lib:format("replace into gfishing values (~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~s,~w,~w,~w,~s)",
+%%		[
+%%			RoleID,
+%%			PlayerFishing#playerFishing.poolID,
+%%			PlayerFishing#playerFishing.fishingLv,
+%%			PlayerFishing#playerFishing.fishingExp,
+%%			PlayerFishing#playerFishing.fishingCount,
+%%			PlayerFishing#playerFishing.leftCount,
+%%			PlayerFishing#playerFishing.buyCount,
+%%			PlayerFishing#playerFishing.buyLeftCount,
+%%			PlayerFishing#playerFishing.time0,
+%%			PlayerFishing#playerFishing.time1,
+%%			PlayerFishing#playerFishing.time2,
+%%			PlayerFishing#playerFishing.autoTime0,
+%%			PlayerFishing#playerFishing.autoTime1,
+%%			PlayerFishing#playerFishing.autoTime2,
+%%			PlayerFishing#playerFishing.rodLv,
+%%			PlayerFishing#playerFishing.creelLv,
+%%			to_bin(role_fishing:reward2tuple(PlayerFishing#playerFishing.creelList)),
+%%			PlayerFishing#playerFishing.autoExp,
+%%			PlayerFishing#playerFishing.fishingState,
+%%			PlayerFishing#playerFishing.curSkinID,
+%%			to_bin(PlayerFishing#playerFishing.skinIDList)
+%%		]),
+%%	sql_execute_with_log(Sql);
+%%setPlayerFishing(_RoleID,_) ->
+%%	ok.
+
+%%-------------钓鱼 END------------------
+
 %% ====================================================================
 %% 玩家数据 持久化
 %% ====================================================================
@@ -141,47 +204,6 @@ get_rows(Sql) ->
 			[]
 	end.
 
-test_select(ID) ->
-	Sql = io_lib:format("select * from gRole where roleID = ~w",[ID]),
-	get_row(Sql).
-test_insert(ID,Name) ->
-	Sql = io_lib:format("replace into gRole values (~w,~s)",[ID,quote(Name)]),
-	sql_execute_with_log(Sql).
-%%-------------钓鱼------------------
-%%getPlayerFishing(RoleID) ->
-%%	Sql = io_lib:format("select * from gfishing where roleID = ~w",[RoleID]),
-%%	get_row(Sql).
-%%
-%%setPlayerFishing(RoleID, #playerFishing{}=PlayerFishing) ->
-%%	Sql = io_lib:format("replace into gfishing values (~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~w,~s,~w,~w,~w,~s)",
-%%		[
-%%			RoleID,
-%%			PlayerFishing#playerFishing.poolID,
-%%			PlayerFishing#playerFishing.fishingLv,
-%%			PlayerFishing#playerFishing.fishingExp,
-%%			PlayerFishing#playerFishing.fishingCount,
-%%			PlayerFishing#playerFishing.leftCount,
-%%			PlayerFishing#playerFishing.buyCount,
-%%			PlayerFishing#playerFishing.buyLeftCount,
-%%			PlayerFishing#playerFishing.time0,
-%%			PlayerFishing#playerFishing.time1,
-%%			PlayerFishing#playerFishing.time2,
-%%			PlayerFishing#playerFishing.autoTime0,
-%%			PlayerFishing#playerFishing.autoTime1,
-%%			PlayerFishing#playerFishing.autoTime2,
-%%			PlayerFishing#playerFishing.rodLv,
-%%			PlayerFishing#playerFishing.creelLv,
-%%			to_bin(role_fishing:reward2tuple(PlayerFishing#playerFishing.creelList)),
-%%			PlayerFishing#playerFishing.autoExp,
-%%			PlayerFishing#playerFishing.fishingState,
-%%			PlayerFishing#playerFishing.curSkinID,
-%%			to_bin(PlayerFishing#playerFishing.skinIDList)
-%%		]),
-%%	sql_execute_with_log(Sql);
-%%setPlayerFishing(_RoleID,_) ->
-%%	ok.
-
-%%-------------钓鱼 END------------------
 %% ====================================================================
 %% Internal functions
 %% ====================================================================

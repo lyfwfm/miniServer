@@ -1,0 +1,167 @@
+
+//request
+[
+
+    {
+        "name":"login",
+        "value":
+        {
+            "deviceId":"",
+        }
+    }
+    ,
+    {
+        "name":"create_role",
+        "value":
+        {
+            "deviceId":"",
+            "name":"abc"
+        }
+    }
+    ,
+    {
+        "name":"put_fish",
+        "value":
+        {
+            "id":"123",
+        }
+    }
+    {
+        "name":"remove_fish",
+        "value":
+        {
+            "id":"123",
+        }
+    }
+    {
+        "name":"merge",
+        "value":
+        {
+            "id1":"123",
+            "id2":"1234",
+        }
+    }
+    {
+        "name":"sell_fish",
+        "value":
+        {
+            "id":"123",
+        }
+    }
+    {
+        "name":"sell_fish",
+        "value":
+        {
+            "id":"123",
+        }
+    }
+    {
+        "name":"buy_fish",
+        "value":
+        {
+            "cfg_id":"123",
+        }
+    }
+    ,
+    {
+        "name":"speed_up"
+    }
+    {
+        "name":"heart_beat"
+
+    }
+    {
+        "name":"offline"
+    }
+
+
+]
+//response data
+[
+    //put fish response
+    {
+        "":""
+    }
+    //merge response
+    {
+        "id":"12345",
+        "cfg_id":"12345",
+        "unlock_cfg_id":"",
+    }
+    //sell_fish response
+    {
+        "gold":"12344",
+    }
+    //buy fish response
+    {
+        "cfg_id":"",
+        "id":"",
+    }
+]
+
+//登录data
+{
+    "userName":"",
+    "packageFishlist":[],
+    "gold":"",
+    "offline_gold":"",
+    "login_days":"1"
+    "unlocked_fishes":
+    [
+        {
+            "cfg_id":"1",
+            "buy_cout":"1"
+        }
+    ]
+
+}
+//fish data
+{
+
+    "id":"123",
+    "cfg_id":"",
+    "isWorking":"",
+
+}
+//rank data
+
+{
+    "my":
+    {
+        "rank":""
+    },
+    "players":[
+        {
+            "name":"",
+            "gold":"",
+            "rank":"",
+            "head_url":""
+        }
+    ]
+
+}
+
+
+
+{
+    "name":"",
+
+    "value":
+    {
+        "deviceId":"",
+
+    }
+
+}
+
+{
+    "ret":
+    {
+        "name":"",
+        "code":"",
+        "data":
+        {
+
+        }
+    }
+}
