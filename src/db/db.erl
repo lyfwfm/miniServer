@@ -11,7 +11,7 @@ connect_mysql() ->
 	IP="localhost",
 	Port=3306,
 	UserName="root",
-	Pass="ctl3926026",
+	Pass="123.com",
 	DBName="mini_gamedb",
 	Num=10,
 	emysql:add_pool(?DB, Num,UserName,Pass, IP, Port,DBName, utf8),

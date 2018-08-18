@@ -1,1 +1,1 @@
-erl -s make all -s erlang halt
+"C:\\Program Files\\erl10.0.1\\bin\\erl.exe" -s make all

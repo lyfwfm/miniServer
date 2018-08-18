@@ -95,7 +95,9 @@
 	getValueInSectionList/3
 ]).
 
--define(GREGORIAN_INTERVIAL_TIME,  (calendar:datetime_to_gregorian_seconds(data_setting:get(time_zone)))).
+
+-define(TIME_ZONE, {{1970,1,1}, {8,0,0}}).
+-define(GREGORIAN_INTERVIAL_TIME,  (calendar:datetime_to_gregorian_seconds(?TIME_ZONE))).
 
 
 %% 2的N次方
@@ -143,13 +145,12 @@ log(_,_,_,_,_) ->
 
 %% @doc 取得当前的unix时间戳,单位：秒
 now() ->
-	%{M, S, _} = erlang:now(),
 	{M,S,_} = os:timestamp(),
 	M * 1000000 + S.
 
 %% @doc 当前时间戳，单位：毫秒
 now_mili() ->
-	{M, S, Ms} = erlang:now(),
+	{M, S, Ms} = os:timestamp(),
 	M * 1000000000 + S*1000 + Ms div 1000.
 
 %% 转换成HEX格式的md5
@@ -708,9 +709,9 @@ nth_take(N, [Hd | Tail], Temp) ->
 
 %% 测试
 tc(F, N) ->
-    Time1 = erlang:now(),
+    Time1 = os:timestamp(),
     do_times(N, F),
-    Time2 = erlang:now(),
+    Time2 = os:timestamp(),
     MicroDiffPerTime = timer:now_diff(Time2, Time1) / N,
     io:format("Times :~w ,  Each time consume: ~w us\n", [N, MicroDiffPerTime]).
 
@@ -845,7 +846,7 @@ upmap(F, L) ->
 
 
 gen_random_seed() ->
-	erlang:now().
+	os:timestamp().
 
 latin1(Name) ->
 	Name2 = 

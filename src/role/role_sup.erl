@@ -56,7 +56,8 @@ start_link() ->
 	ignore |
 	{error, Reason :: term()}).
 init([]) ->
-	RestartStrategy = simple_one_for_one,
+	io:format("role sup init ~n"),
+	RestartStrategy = one_for_one,
 	MaxRestarts = 1000,
 	MaxSecondsBetweenRestarts = 3600,
 

@@ -24,11 +24,13 @@
 	terminate/2,
 	code_change/3]).
 
--export([getRole/1,getRoleProperty/2,setRole/1,isRoleExist/1]).
+-export([getRole/1, getRoleProperty/2, isRoleExist/1,operateRole/2,insertRole/1]).
 
 -define(SERVER, ?MODULE).
 
 -record(state, {}).
+-define(LOOP_TIME, 1 * 1000).
+-define(HEART_BEAT_OFF_TIME, 60).
 
 -define(ETS_ROLE, ets_role).%%进程保存所有玩家信息的ETS
 
@@ -67,7 +69,10 @@ start_link() ->
 	{ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term()} | ignore).
 init([]) ->
-	ets:new(?ETS_ROLE, [named_table,{keypos,#role.deviceID},set,public]),
+	?ERR("~p begin init",[?MODULE]),
+	ets:new(?ETS_ROLE, [named_table, {keypos, #role.deviceID}, set, protected]),
+	erlang:send_after(?LOOP_TIME, self(), heartbeat),
+	?ERR("~p init success",[?MODULE]),
 	{ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -116,7 +121,22 @@ handle_cast(_Request, State) ->
 	{noreply, NewState :: #state{}} |
 	{noreply, NewState :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term(), NewState :: #state{}}).
-handle_info(_Info, State) ->
+handle_info(Info, State) ->
+	try
+		case Info of
+			heartbeat ->
+				do_heartbeat();
+			{operateRole, RoleID, OperateList} ->
+				doOperateRole(RoleID, OperateList);
+			{insertRole, Role} ->
+				setRole(Role);
+			_ ->
+				?ERR("no match Info=~p", [Info])
+		end
+	catch
+		_:Why ->
+			?ERR("role_server handle_info Info=~p,Why=~p", [Info, Why])
+	end,
 	{noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -154,30 +174,85 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%获取用户数据，如果ETS没有，则从数据库加载
 getRole(RoleID) ->
-	case ets:lookup(?ETS_ROLE,RoleID) of
+	case ets:lookup(?ETS_ROLE, RoleID) of
 		[Role] -> Role;
 		_ ->
 			Role = db_sql:getRole(RoleID),
-			ets:insert(?ETS_ROLE,Role),
+			ets:insert(?ETS_ROLE, Role),
 			Role
 	end.
 
-getRoleProperty(RoleID,PropertyIndex) ->
+getRoleProperty(RoleID, PropertyIndex) ->
 	Role = getRole(RoleID),
-	element(PropertyIndex,Role).
+	element(PropertyIndex, Role).
 
 setRole(Role) ->
-	ets:insert(?ETS_ROLE,Role),
+	ets:insert(?ETS_ROLE, Role),
 	db_sql:setRole(Role).
 
+%%inner
 isRoleExist(RoleID) ->
-	case ets:member(?ETS_ROLE,RoleID) of
+	case ets:member(?ETS_ROLE, RoleID) of
 		?FALSE ->
 			db_sql:isRoleExist(RoleID);
 		_ -> ?TRUE
 	end.
+operateRole(RoleID,OperateList) ->
+	?SERVER ! {operateRole, RoleID, OperateList}.
+insertRole(Role) ->
+	?SERVER ! {insertRole, Role}.
 
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_heartbeat() ->
+	Now = util:now(),
+	Func = fun(#role{heartbeatTimestamp = Heartbeat,
+		money = OldMoney, fishList = FishList} = Role) ->
+		case Now - Heartbeat > ?HEART_BEAT_OFF_TIME of
+			?TRUE ->%%判定离线
+				doRoleOffline(Role);
+			_ ->%%计算每条鱼收益
+				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime} = Fish, {AccMoney, AccFishList}) ->
+					case FishState of
+						?FISH_STATE_WORKING ->
+							case Now - WorkTime >= 5 of%%todo 鱼的赚钱间隔时间
+								?TRUE ->
+									AddMoney = 999,%%todo 配置钱数量
+									{AccMoney + AddMoney, [Fish#fish{worktimestamp = Now} | AccFishList]};
+								_ -> {AccMoney, [Fish | AccFishList]}
+							end;
+						_ -> {AccMoney, [Fish | AccFishList]}
+					end
+				           end,
+				{FishMoney, NewFishList} = lists:foldl(FishFunc, {0, []}, FishList),
+				case FishMoney > 0 of
+					?TRUE ->
+						NewRole = Role#role{money = OldMoney + FishMoney, fishList = NewFishList},
+						setRole(NewRole);
+					_ -> ok
+				end
+		end
+	       end,
+	util:ets_foreach_key(Func, ?ETS_ROLE),
+	ok.
+
+doRoleOffline(Role) ->
+	ets:delete(?ETS_ROLE, Role#role.deviceID),
+	db_sql:setRole(Role#role{offlineTimestamp = util:now()}).
+
+doOperateRole(RoleID, OperateList) ->
+	Role = getRole(RoleID),
+	Func = fun({add, PropertyIndex, Value}, AccRole) ->
+		OldValue = element(PropertyIndex, AccRole),
+		setelement(PropertyIndex, AccRole, OldValue + Value);
+		({set, PropertyIndex, Value}, AccRole) ->
+			setelement(PropertyIndex, AccRole, Value);
+		({dec, PropertyIndex, Value}, AccRole) ->
+			OldValue = element(PropertyIndex, AccRole),
+			setelement(PropertyIndex, AccRole, OldValue - Value);
+		(_, AccRole) -> AccRole
+	       end,
+	NewRole = lists:foldl(Func, Role, OperateList),
+	setRole(NewRole).

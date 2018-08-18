@@ -29,18 +29,22 @@ test_insert(ID,Name) ->
 getRole(RoleID) ->
 	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
 	case get_row(Sql) of
-		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList] ->
+		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList,
+			LoginTimestamp,OfflineTimestamp,LastRewardLoginTimestamp] ->
 			#role{deviceID = RoleID,roleName = Name,money = Money,gold = Gold,fishList = to_term(FishList),
-				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList)};
+				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList),
+				loginTimestamp = LoginTimestamp,offlineTimestamp = OfflineTimestamp,lastRewardLoginTimestamp = LastRewardLoginTimestamp};
 		_ -> #role{deviceID = RoleID}
 	end.
 setRole(Role) ->
-	Sql = io_lib:format("replace into gRole values (~w,~s,~w,~w,~s,~w,~w,~s)",
+	Sql = io_lib:format("replace into gRole values (~w,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w)",
 		[
-			Role#role.deviceID,Role#role.roleName,
+			Role#role.deviceID,quote(Role#role.roleName),
 			Role#role.money,Role#role.gold,
 			to_bin(Role#role.fishList),Role#role.loginDays,
-			Role#role.unlockFishCfgID,to_bin(Role#role.fishBuyList)
+			Role#role.unlockFishCfgID,to_bin(Role#role.fishBuyList),
+			Role#role.loginTimestamp,Role#role.offlineTimestamp,
+			Role#role.lastRewardLoginTimestamp
 		]),
 	sql_execute_with_log(Sql).
 isRoleExist(RoleID)->

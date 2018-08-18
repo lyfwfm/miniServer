@@ -3,4 +3,4 @@
 -record(msg_fish_buy,{cfg_id,buy_count}).
 -json({msg_fish_buy,{number,"cfg_id"},{number,"buy_count"}}).
 -record(msg_login,{userName,packageFishlist,gold,offline_gold,login_days,unlocked_fishes,fish_buy_list}).
--json({msg_login,{string,"userName"},{list,"packageFishlist",{type,msg_fish}},{number,"gold"},{number,"offline_gold"},{number,"login_days"},{number,"unlocked_fishes"},{list,"fish_buy_list",{type,msg_fish_buy}}}).
+-json({msg_login,{string,"userName"},{list,"packageFishlist",[{type,msg_fish}]},{number,"gold"},{number,"offline_gold"},{number,"login_days"},{number,"unlocked_fishes"},{list,"fish_buy_list",[{type,msg_fish_buy}]}}).

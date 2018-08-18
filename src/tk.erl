@@ -24,11 +24,13 @@ start()->
 		end,
 	lists:foldl(StartFunc,[],[
 		sasl,kernel,stdlib,crypto,inets,asn1,public_key,ssl,compiler,xmerl,syntax_tools,jsx,emysql,db,%%logger,
-	mochiweb,ejson]).
+	mochiweb,ejson,
+		role]).
 	
 run() ->
 	Loopfun = fun(Req) -> ?MODULE:web_loop(Req) end,
-	mochiweb_http:start([{loop,Loopfun}]).
+	Port = 8887,
+	mochiweb_http:start([{loop,Loopfun},{port,Port}]).
 
 web_loop(Req) ->
  "/" ++ Path = Req:get(path),

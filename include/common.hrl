@@ -10,14 +10,15 @@
 -include("msg.hrl").
 
 -define(UNDEFINED, undefined).
--define(SUCCESS, success).
+-define(SUCCESS, "success").
 
 -define(FISH_STATE_IDLE,0).
 -define(FISH_STATE_WORKING,1).
 -record(fish,{
 	fishID=0,%%鱼的唯一ID
 	cfgID=0,
-	state=?FISH_STATE_IDLE
+	state=?FISH_STATE_IDLE,
+	worktimestamp=0%%每轮工作的起始时间戳
 }).
 -record(role,{
 	deviceID=0,%%玩家设备ID 作为唯一ID
@@ -27,7 +28,11 @@
 	fishList=[],%%玩家所有鱼的情况[#fish{}]
 	loginDays=0,%%连续登陆的天数
 	unlockFishCfgID=0,
-	fishBuyList=[]%%玩家购买鱼的情况[{CfgID,Count}]
+	fishBuyList=[],%%玩家购买鱼的情况[{CfgID,Count}]
+	loginTimestamp=0,
+	offlineTimestamp=0,
+	lastRewardLoginTimestamp=0,%%领取登陆奖励的时间戳
+	heartbeatTimestamp=0
 }).
 -json({role,{string,"name"}}).
 
