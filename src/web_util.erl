@@ -66,16 +66,24 @@ route(Req) ->
 	end.
 
 %%依次返回客户端传来的值
-getValueListFromReq(Json) ->
-	Value = proplists:get_value("value", Json),
-	Keys = proplists:get_keys(Value),
-	Values = lists:map(fun(Key) ->
-		proplists:get_value(Key, Value)
-	                   end, Keys),
-	?INFO("Json=~p,Value=~p,Keys=~p,Values=~p~n", [Json, Value, Keys, Values]),
-	Values.
+getValueListFromJson(Json) ->
+	%%todo 先不包装，不用proplist:get_keys 因为它不保证顺序
+%%	Value = proplists:get_value("value", Json),
+%%	Keys = proplists:get_keys(Value),
+%%	Values = lists:map(fun(Key) ->
+%%		proplists:get_value(Key, Value)
+%%	                   end, Keys),
+%%	?INFO("Json=~p,Value=~p,Keys=~p,Values=~p~n", [Json, Value, Keys, Values]),
+%%	Values.
+	Values = lists:map(fun({_KeyStr,ValueStr}) ->
+		util:tryString2int(ValueStr)
+	                   end, Json),
+	case length(Values) > 0 of
+		?TRUE -> tl(Values);
+		_ -> []
+	end.
 
 spawn_out(Module,Function,Req) ->
 	Json = mochiweb_request:parse_qs(Req),
 	FuncName = proplists:get_value("funcname", Json),
-	spawn(Module,Function,[Req,FuncName,getValueListFromReq(Req)]).
+	spawn(Module,Function,[Req,FuncName,getValueListFromJson(Json)]).

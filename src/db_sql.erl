@@ -24,7 +24,7 @@ getRole(RoleID) ->
 		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList,
 			LoginTimestamp,OfflineTimestamp,LastRewardLoginTimestamp,SpeedTimestamp,
 			IncFishID] ->
-			#role{deviceID = RoleID,roleName = Name,money = Money,gold = Gold,fishList = to_term(FishList),
+			#role{deviceID = RoleID,roleName = binary_to_list(Name),money = Money,gold = Gold,fishList = to_term(FishList),
 				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList),
 				loginTimestamp = LoginTimestamp,offlineTimestamp = OfflineTimestamp,lastRewardLoginTimestamp = LastRewardLoginTimestamp,
 				speedTimestamp = SpeedTimestamp,incFishID = IncFishID};

@@ -36,7 +36,7 @@
 	lastRewardLoginTimestamp=0,%%领取登陆奖励的时间戳
 	heartbeatTimestamp=0,
 	speedTimestamp=0,%%加速的结束时间戳
-	incFishID=0%%自增的鱼唯一ID，自己计数
+	incFishID=1%%自增的鱼唯一ID，自己计数
 }).
 -json({role,{string,"name"}}).
 

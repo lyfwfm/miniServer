@@ -105,7 +105,8 @@
 	formap/3,
 	tupleAdd/3,
 	getValueInSectionList/3,
-	make_proto/1
+	make_proto/1,
+	tryString2int/1
 ]).
 
 
@@ -1105,3 +1106,10 @@ boolean2int(true)->
 	1;
 boolean2int(false)->
 	0.
+
+tryString2int(Str) ->
+	try
+		erlang:list_to_integer(Str)
+	catch
+		_:_Why -> Str
+	end.

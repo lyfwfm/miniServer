@@ -31,7 +31,7 @@
 
 -record(state, {}).
 -define(LOOP_TIME, 1 * 1000).
--define(HEART_BEAT_OFF_TIME, 60).
+-define(HEART_BEAT_OFF_TIME, 60*20).
 
 %%%===================================================================
 %%% API
@@ -134,8 +134,8 @@ handle_info(Info, State) ->
 				?ERR("no match Info=~p", [Info])
 		end
 	catch
-		_:Why ->
-			?ERR("role_server handle_info Info=~p,Why=~p", [Info, Why])
+		_:Why:StackTrace ->
+			?ERR("role_server handle_info Info=~p,Why=~p,StackTrace=~p", [Info, Why,StackTrace])
 	end,
 	{noreply, State}.
 
@@ -178,7 +178,7 @@ getRole(RoleID) ->
 		[Role] -> Role;
 		_ ->
 			Role = db_sql:getRole(RoleID),
-			ets:insert(?ETS_ROLE, Role),
+			insertRole(Role),
 			Role
 	end.
 
@@ -198,7 +198,7 @@ isRoleExist(RoleID) ->
 		_ -> ?TRUE
 	end.
 operateRole(RoleID,OperateList) ->
-	?SERVER ! {operateRole, RoleID, OperateList}.
+	?SERVER ! {operateRole, RoleID, [{set,#role.heartbeatTimestamp,util:now()}]++OperateList}.
 insertRole(Role) ->
 	?SERVER ! {insertRole, Role}.
 offlineRole(RoleID) ->
@@ -209,21 +209,23 @@ offlineRole(RoleID) ->
 %%% Internal functions
 %%%===================================================================
 do_heartbeat() ->
+	erlang:send_after(?LOOP_TIME, self(), heartbeat),
 	Now = util:now(),
-	Func = fun(#role{heartbeatTimestamp = Heartbeat,
-		money = OldMoney, fishList = FishList,speedTimestamp = SpeedTimestamp} = Role) ->
+	Func = fun(RoleID) ->
+		#role{heartbeatTimestamp = Heartbeat,
+			money = OldMoney, fishList = FishList,speedTimestamp = SpeedTimestamp} = Role = getRole(RoleID),
 		case Now - Heartbeat > ?HEART_BEAT_OFF_TIME of
 			?TRUE ->%%判定离线
 				doRoleOffline(Role);
 			_ ->%%计算每条鱼收益
-				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime} = Fish, {AccMoney, AccFishList}) ->
+				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime,cfgID = FishCfgID} = Fish, {AccMoney, AccFishList}) ->
 					case FishState of
 						?FISH_STATE_WORKING ->
 							IsSpeedUp = SpeedTimestamp >= Now,
 							MakeMoneyInternalTime = util:getTernaryValue(IsSpeedUp,2,4),%%todo 鱼的赚钱间隔时间
 							case Now - WorkTime >= MakeMoneyInternalTime of
 								?TRUE ->
-									AddMoney = 999,%%todo 配置钱数量
+									AddMoney = FishCfgID,%%todo 配置钱数量
 									{AccMoney + AddMoney, [Fish#fish{worktimestamp = Now} | AccFishList]};
 								_ -> {AccMoney, [Fish | AccFishList]}
 							end;

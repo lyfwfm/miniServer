@@ -9,6 +9,7 @@
 -module(role).
 -author("chenlong").
 -include("common.hrl").
+-include_lib("stdlib/include/ms_transform.hrl").
 
 %% API
 -export([cs_login/3,cs_create_role/3,cs_put_fish/3,cs_remove_fish/3,cs_merge_fish/3,
@@ -33,8 +34,7 @@ cs_login(Req,FuncName,[RoleID]) ->
 				{add,#role.money,OfflineMoney+LoginMoney},
 				{set,#role.loginTimestamp,Now},
 				{set,#role.loginDays,NewLoginDays},
-				{set,#role.lastRewardLoginTimestamp,Now},
-				{set,#role.heartbeatTimestamp,Now}
+				{set,#role.lastRewardLoginTimestamp,Now}
 			],
 			role_server:operateRole(RoleID, OperateList),
 			Msg=#sc_login{
@@ -66,7 +66,8 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				unlockFishCfgID = 0,%%todo
 				loginTimestamp = Now,
 				lastRewardLoginTimestamp = Now,
-				heartbeatTimestamp = Now
+				heartbeatTimestamp = Now,
+				fishList = [#fish{fishID = 1,cfgID = 10}]
 			},
 			role_server:insertRole(Role),
 			Msg=#sc_login{
@@ -103,7 +104,7 @@ cs_put_fish(Req,FuncName,[RoleID, FishID]) ->
 
 cs_remove_fish(Req,FuncName,[RoleID,FishID]) ->
 	Role = role_server:getRole(RoleID),
-	case lists:keyfind(FishID,#fish.fishID,Role#role.fishList) of
+	case lists:keytake(FishID,#fish.fishID,Role#role.fishList) of
 		{value, #fish{state = FishState}=Fish,T} ->
 			case FishState =:= ?FISH_STATE_WORKING of
 				?TRUE ->
@@ -191,7 +192,7 @@ cs_speed_up(Req,FuncName,[RoleID]) ->
 	web_util:send(Req,FuncName,?SUCCESS,{}).
 
 cs_heart_beat(Req,FuncName,[RoleID]) ->
-	role_server:operateRole(RoleID,[{set,#role.heartbeatTimestamp,util:now()}]),
+	role_server:operateRole(RoleID,[]),
 	web_util:send(Req,FuncName,?SUCCESS,{}).
 
 cs_offline(Req,FuncName,[RoleID]) ->
@@ -199,7 +200,7 @@ cs_offline(Req,FuncName,[RoleID]) ->
 	web_util:send(Req,FuncName,?SUCCESS,{}).
 
 cs_get_rank(Req,FuncName,[RoleID]) ->
-	MatchSpec = ets:fun2ms(fun(#role{deviceID = TRoleID,gold = Gold,roleName = RoleName}) -> {TRoleID,RoleName,Gold} end),
+	MatchSpec = ets:fun2ms(fun(#role{deviceID = TRoleID,money = Money,roleName = RoleName}) -> {TRoleID,RoleName,Money} end),
 	RoleList = ets:select(?ETS_ROLE,MatchSpec),
 	spawn(?MODULE,sortAndSend,[Req,FuncName,RoleID,RoleList]),
 	ok.
@@ -256,11 +257,11 @@ isWorkingFishFull(#role{fishList = FishList}) ->
 
 sortAndSend(Req,FuncName,RoleID,RoleList) ->
 	SortList = lists:reverse(lists:keysort(3,RoleList)),
-	Func = fun({TRoleID,RoleName,Gold},{AccRank,AccList,AccMyRank}) ->
+	Func = fun({TRoleID,RoleName,Money},{AccRank,AccList,AccMyRank}) ->
 		PlayerMsg = #pk_rank{
 			rank = AccRank,
 			userName = RoleName,
-			gold = Gold,
+			gold = Money,
 			head_url = ""
 		},
 		{AccRank+1,[PlayerMsg|AccList],util:getTernaryValue(TRoleID=:=RoleID,AccRank,AccMyRank)}
