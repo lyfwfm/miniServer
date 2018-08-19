@@ -60,39 +60,15 @@
 
 
 %%-------------------------------------------------------------------------
-%%{0, no_log, "No log"}
-%%,{1, critical, "Critical"}
-%%,{2, error, "Error"}
-%%,{3, warning, "Warning"}
-%%,{4, info, "Info"}
-%%,{5, debug, "Debug"}
-%%,{6, dev, "Dev"}
--define(LOG_LEVEL, 5).
--define(LOG_FILE_DIR, "./log").
-
-%% 致命错误
--define(CRITICAL(Format), logger:critical_msg(?MODULE,?LINE, Format, [])).
--define(CRITICAL(Format, Args), logger:critical_msg(?MODULE,?LINE, Format, Args)).
-
 %% 信息
--define(INFO(Format), logger:info_msg(?MODULE,?LINE, Format, [])).
--define(INFO(Format, Args), logger:info_msg(?MODULE,?LINE, Format, Args)).
-
-%% 警告
--define(WARNING(Format), logger:warning_msg(?MODULE,?LINE, Format, [])).
--define(WARNING(Format, Args), logger:warning_msg(?MODULE,?LINE, Format, Args)).
-
-%% 开发信息
--define(DEV(Format), logger:dev_msg(?MODULE,?LINE, Format, [])).
--define(DEV(Format, Args), logger:dev_msg(?MODULE,?LINE, Format, Args)).
+-define(INFO(Format), hdlt_logger:log("[~p:~p]"++Format,[?MODULE,?LINE])).
+-define(INFO(Format, Args), hdlt_logger:log("[~p:~p]"++Format,[?MODULE,?LINE]++Args)).
 
 %% 调试信息
--define(DEBUG(Format), logger:debug_msg(?MODULE,?LINE, Format, [], [{module, ?MODULE}])).
--define(DEBUG(Format, Args), logger:debug_msg(?MODULE,?LINE, Format, Args, [{module, ?MODULE}])).
+-define(DEBUG(Format), hdlt_logger:debug("[~p:~p]"++Format,[?MODULE,?LINE])).
+-define(DEBUG(Format, Args), hdlt_logger:debug("[~p:~p]"++Format,[?MODULE,?LINE]++Args)).
 
 %% 错误信息
-%%-define(ERR(Format), logger:error_msg(?MODULE,?LINE, Format, [])).
-%%-define(ERR(Format, Args), logger:error_msg(?MODULE,?LINE, Format, Args)).
--define(ERR(Format), error_logger:error_msg(Format, []),util:log(Format,[],?MODULE,?LINE)).
--define(ERR(Format, Args), error_logger:error_msg(Format, Args),util:log(Format,Args,?MODULE,?LINE)).
+-define(ERR(Format), hdlt_logger:error_out("[~p:~p]"++Format,[?MODULE,?LINE])).
+-define(ERR(Format, Args), hdlt_logger:error_out("[~p:~p]"++Format,[?MODULE,?LINE]++Args)).
 %%-------------------------------------------------------------------------

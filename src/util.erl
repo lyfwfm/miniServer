@@ -146,7 +146,7 @@ thing_to_list(X) when is_list(X)    -> X.
 
 %% 日志记录函数
 log(F, A, Mod, Line) ->
-     {ok, Fl} = file:open("logs/error_log.txt", [write, append]),
+     {ok, Fl} = file:open("log/error_log.txt", [write, append]),
      Format = list_to_binary("~s[~w:~w] " ++ F ++ "\r\n~n"),
      {{Y, M, D},{H, I, S}} = erlang:localtime(),
      Date = list_to_binary([integer_to_list(Y),"-", integer_to_list(M), "-", integer_to_list(D), " ", integer_to_list(H), ":", integer_to_list(I), ":", integer_to_list(S)]),

@@ -67,10 +67,10 @@ start_link() ->
 	{ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term()} | ignore).
 init([]) ->
-	?ERR("~p begin init",[?MODULE]),
+	?INFO("~p begin init",[?MODULE]),
 	ets:new(?ETS_ROLE, [named_table, {keypos, #role.deviceID}, set, protected]),
 	erlang:send_after(?LOOP_TIME, self(), heartbeat),
-	?ERR("~p init success",[?MODULE]),
+	?INFO("~p init success",[?MODULE]),
 	{ok, #state{}}.
 
 %%--------------------------------------------------------------------

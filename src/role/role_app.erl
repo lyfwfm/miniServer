@@ -36,13 +36,11 @@
 	{ok, pid(), State :: term()} |
 	{error, Reason :: term()}).
 start(_StartType, _StartArgs) ->
-	io:format("role app begin~n"),
+	hdlt_logger:start_link("gameserver"),
 	case 'role_sup':start_link() of
 		{ok, Pid} ->
-			io:format("role sup start ok ~n"),
 			{ok, Pid};
 		Error ->
-			io:format("role sup start error=~p ~n",[Error]),
 			Error
 	end.
 

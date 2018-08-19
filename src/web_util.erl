@@ -72,7 +72,7 @@ getValueListFromReq(Json) ->
 	Values = lists:map(fun(Key) ->
 		proplists:get_value(Key, Value)
 	                   end, Keys),
-	io:format("Json=~p,Value=~p,Keys=~p,Values=~p~n", [Json, Value, Keys, Values]),
+	?INFO("Json=~p,Value=~p,Keys=~p,Values=~p~n", [Json, Value, Keys, Values]),
 	Values.
 
 spawn_out(Module,Function,Req) ->
