@@ -1,3 +1,19 @@
-[msg_fish,{id,number},{cfg_id,number},{isWorking,boolean}].
-[msg_fish_buy,{cfg_id,number},{buy_count,number}].
-[msg_login,{userName,string},{packageFishlist,list,msg_fish},{gold,number},{offline_gold,number},{login_days,number},{unlocked_fishes,number},{fish_buy_list,list,msg_fish_buy}].
+%%
+
+
+[pk_fish,{id,number},{cfg_id,number},{isWorking,boolean}].
+[pk_fish_buy,{cfg_id,number},{buy_count,number}].
+%%登陆
+[sc_login,{userName,string},{packageFishlist,list,pk_fish},{gold,number},{offline_gold,number},{login_days,number},{unlocked_fishes,number},{fish_buy_list,list,pk_fish_buy}].
+
+%%放鱼 不用数据
+%%收鱼 不用数据
+%%合成鱼
+[sc_merge_fish,{id,number},{cfg_id,number},{unlock_cfg_id,number}].
+%%卖鱼
+[sc_sell_fish,{gold,number}].
+%%买鱼
+[sc_buy_fish,{cfg_id,number},{id,number}].
+%%排行榜
+[pk_rank,{userName,string},{gold,number},{rank,number},{head_url,string}].
+[sc_rank,{my_rank,number},{rank_list,list,pk_rank}].

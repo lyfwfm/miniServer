@@ -11,7 +11,10 @@
 -include("common.hrl").
 
 %% API
--export([cs_login/3,cs_create_role/3]).
+-export([cs_login/3,cs_create_role/3,cs_put_fish/3,cs_remove_fish/3,cs_merge_fish/3,
+	cs_sell_fish/3,cs_buy_fish/3,cs_speed_up/3,cs_heart_beat/3,cs_offline/3,cs_get_rank/3]).
+
+-export([sortAndSend/4]).
 
 cs_login(Req,FuncName,[RoleID]) ->
 	case role_server:isRoleExist(RoleID) of
@@ -34,15 +37,15 @@ cs_login(Req,FuncName,[RoleID]) ->
 				{set,#role.heartbeatTimestamp,Now}
 			],
 			role_server:operateRole(RoleID, OperateList),
-			Msg=#msg_login{
+			Msg=#sc_login{
 				userName = OldRole#role.roleName,
-				packageFishlist = [#msg_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
+				packageFishlist = [#pk_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
 					|| Fish <- OldRole#role.fishList],
 				gold = NewMoney,
 				offline_gold = OfflineMoney,
 				login_days = NewLoginDays,
 				unlocked_fishes = OldRole#role.unlockFishCfgID,
-				fish_buy_list = [#msg_fish_buy{cfg_id = FishCfgID,buy_count = BuyCount}
+				fish_buy_list = [#pk_fish_buy{cfg_id = FishCfgID,buy_count = BuyCount}
 				|| {FishCfgID,BuyCount} <- OldRole#role.fishBuyList]
 
 			},
@@ -65,8 +68,8 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				lastRewardLoginTimestamp = Now,
 				heartbeatTimestamp = Now
 			},
-%%			role_server:insertRole(Role),
-			Msg=#msg_login{
+			role_server:insertRole(Role),
+			Msg=#sc_login{
 				userName = RoleName,
 				packageFishlist = [],
 				gold = LoginMoney,
@@ -78,6 +81,129 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 			web_util:send(Req,FuncName,?SUCCESS,Msg)
 	end.
 
+cs_put_fish(Req,FuncName,[RoleID, FishID]) ->
+	%%魚是否滿
+	Role = role_server:getRole(RoleID),
+	case isWorkingFishFull(Role) of
+		?TRUE -> web_util:send(Req,FuncName,"woring_fish_full",{});
+		_ ->
+			case lists:keytake(FishID,#fish.fishID,Role#role.fishList) of
+				?FALSE -> web_util:send(Req,FuncName,"no_this_fish",{});
+				{value, #fish{state = OldState}=Fish, T} ->
+					case OldState =:= ?FISH_STATE_IDLE of
+						?TRUE ->
+							Now = util:now(),
+							NewFishList = [Fish#fish{state = ?FISH_STATE_WORKING,worktimestamp = Now}|T],
+							role_server:operateRole(RoleID,[{set, #role.fishList, NewFishList}]),
+							web_util:send(Req,FuncName,?SUCCESS,{});
+						_ -> web_util:send(Req,FuncName,"fish_not_idle",{})
+					end
+			end
+	end.
+
+cs_remove_fish(Req,FuncName,[RoleID,FishID]) ->
+	Role = role_server:getRole(RoleID),
+	case lists:keyfind(FishID,#fish.fishID,Role#role.fishList) of
+		{value, #fish{state = FishState}=Fish,T} ->
+			case FishState =:= ?FISH_STATE_WORKING of
+				?TRUE ->
+					NewFishList = [Fish#fish{state = ?FISH_STATE_IDLE}|T],
+					role_server:operateRole(RoleID,[{set,#role.fishList,NewFishList}]),
+					web_util:send(Req,FuncName,?SUCCESS,{});
+				_ -> web_util:send(Req,FuncName,"fish_not_working",{})
+			end;
+		_ -> web_util:send(Req,FuncName,"no_this_fish",{})
+	end.
+
+cs_merge_fish(Req,FuncName,[RoleID,FishID1,FishID2]) ->
+	Role = role_server:getRole(RoleID),
+	case lists:keytake(FishID1,#fish.fishID,Role#role.fishList) of
+		{value,#fish{state = FishState1},T1} ->
+			case FishState1 =:= ?FISH_STATE_IDLE of
+				?TRUE ->
+					case lists:keytake(FishID2,#fish.fishID,T1) of
+						{value,#fish{state = FishState2},T2} ->
+							case FishState2 =:= ?FISH_STATE_IDLE of
+								?TRUE ->
+									NewFishID =Role#role.incFishID+1,
+									NewFishCfgID = todo,
+									NewFish = #fish{fishID = NewFishID,cfgID = NewFishCfgID},%%产生新鱼
+									NewFishList = [NewFish|T2],
+									HigherCfgID = case NewFishCfgID > Role#role.unlockFishCfgID of
+										?TRUE ->
+											role_server:operateRole(RoleID,[
+												{add,#role.incFishID,1},
+												{set,#role.fishList,NewFishList},
+												{set,#role.unlockFishCfgID,NewFishCfgID}]),
+										              NewFishCfgID;
+										_ ->
+											role_server:operateRole(RoleID,[
+												{add,#role.incFishID,1},
+												{set,#role.fishList,NewFishList}]),
+											Role#role.unlockFishCfgID
+									end,
+									Msg = #sc_merge_fish{
+										id = NewFishID,
+										cfg_id = NewFishCfgID,
+										unlock_cfg_id = HigherCfgID
+									},
+									web_util:send(Req,FuncName,?SUCCESS,Msg);
+								_ -> web_util:send(Req,FuncName,"fish_not_idle",{})
+							end;
+						_ -> web_util:send(Req,FuncName,"no_this_fish",{})
+					end;
+				_ -> web_util:send(Req,FuncName,"fish_not_idle",{})
+			end;
+		_ -> web_util:send(Req,FuncName,"no_this_fish",{})
+	end.
+
+cs_sell_fish(Req,FuncName,[RoleID,FishID]) ->
+	Role = role_server:getRole(RoleID),
+	case lists:keytake(FishID,#fish.fishID,Role#role.fishList) of
+		{value, #fish{cfgID = FishCfgID},T} ->
+			AddMoney = FishCfgID,%%todo
+			role_server:operateRole(RoleID,[{add,#role.money,AddMoney},{set,#role.fishList,T}]),
+			Msg = #sc_sell_fish{gold = AddMoney},
+			web_util:send(Req,FuncName,?SUCCESS,Msg);
+		_ -> web_util:send(Req,FuncName,"no_this_fish",{})
+	end.
+
+cs_buy_fish(Req,FuncName,[RoleID,FishCfgID]) ->
+	Role = role_server:getRole(RoleID),
+	CostMoney = FishCfgID,%%todo
+	case Role#role.money >= CostMoney of
+		?TRUE ->
+			%%产生新鱼
+			NewFishID = Role#role.incFishID+1,
+			NewFish = #fish{fishID = NewFishID,cfgID = FishCfgID},
+			role_server:operateRole(RoleID,[
+				{add,#role.incFishID,1},
+				{dec,#role.money,CostMoney},{set,#role.fishList,[NewFish|Role#role.fishList]}]),
+			Msg = #sc_buy_fish{id = NewFishID,cfg_id = FishCfgID},
+			web_util:send(Req,FuncName,?SUCCESS,Msg);
+		_ -> web_util:send(Req,FuncName,"not_enough_money",{})
+	end.
+
+cs_speed_up(Req,FuncName,[RoleID]) ->
+	Now = util:now(),
+	SpeedTime = 180,%%todo
+	role_server:operateRole(RoleID,[{set,#role.speedTimestamp,Now+SpeedTime}]),
+	web_util:send(Req,FuncName,?SUCCESS,{}).
+
+cs_heart_beat(Req,FuncName,[RoleID]) ->
+	role_server:operateRole(RoleID,[{set,#role.heartbeatTimestamp,util:now()}]),
+	web_util:send(Req,FuncName,?SUCCESS,{}).
+
+cs_offline(Req,FuncName,[RoleID]) ->
+	role_server:offlineRole(RoleID),
+	web_util:send(Req,FuncName,?SUCCESS,{}).
+
+cs_get_rank(Req,FuncName,[RoleID]) ->
+	MatchSpec = ets:fun2ms(fun(#role{deviceID = TRoleID,gold = Gold,roleName = RoleName}) -> {TRoleID,RoleName,Gold} end),
+	RoleList = ets:select(?ETS_ROLE,MatchSpec),
+	spawn(?MODULE,sortAndSend,[Req,FuncName,RoleID,RoleList]),
+	ok.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -85,9 +211,21 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 calcOfflineMoney(Role) ->
 	Now = util:now(),
 	OfflineTime = Now - Role#role.offlineTimestamp,
+	{SpeedTime,NormalTime}=case Role#role.speedTimestamp > Now of
+		?TRUE ->
+			{OfflineTime,0};
+		_ ->
+			TSpeedTime = max(0,Role#role.speedTimestamp-Role#role.offlineTimestamp),
+			{
+				TSpeedTime,
+				OfflineTime - TSpeedTime
+			}
+	end,
 	CalcFunc = fun(#fish{cfgID = CfgID,state = FishState}) ->
 		case FishState of
-			?FISH_STATE_WORKING -> CfgID * OfflineTime;%%todo 读取配置
+			?FISH_STATE_WORKING ->
+				EachMoney = CfgID,%%todo 读取配置
+				EachMoney * NormalTime+EachMoney * 2 * SpeedTime;
 			_ -> 0
 		end
 		end,
@@ -109,3 +247,27 @@ checkLoginReward(LastRewardTimestamp,LoginDays) ->
 		?TRUE -> 0;%%已经领取过了
 		_ -> LoginDays*100%%todo 读取配置
 	end.
+
+isWorkingFishFull(#role{fishList = FishList}) ->
+	WorkingList = lists:filter(fun(#fish{state = State}) ->
+		State =:= ?FISH_STATE_WORKING
+		end,FishList),
+	length(WorkingList) >= 10.
+
+sortAndSend(Req,FuncName,RoleID,RoleList) ->
+	SortList = lists:reverse(lists:keysort(3,RoleList)),
+	Func = fun({TRoleID,RoleName,Gold},{AccRank,AccList,AccMyRank}) ->
+		PlayerMsg = #pk_rank{
+			rank = AccRank,
+			userName = RoleName,
+			gold = Gold,
+			head_url = ""
+		},
+		{AccRank+1,[PlayerMsg|AccList],util:getTernaryValue(TRoleID=:=RoleID,AccRank,AccMyRank)}
+		end,
+	{_,MsgRankList,MyRank}=lists:foldl(Func,{1,[],0},SortList),
+	Msg = #sc_rank{
+		my_rank = MyRank,
+		rank_list = MsgRankList
+	},
+	web_util:send(Req,FuncName,?SUCCESS,Msg).

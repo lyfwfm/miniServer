@@ -4,8 +4,7 @@
 
 -module(db).
 -include("common.hrl").
--compile(export_all).
--export([]).
+-export([connect_mysql/0]).
 
 connect_mysql() ->
 	IP="localhost",

@@ -4,10 +4,9 @@
 -module(util).
 -include("common.hrl").
 
--compile(export_all).
 -export([
          pow/1,
-		 log/5,
+		 log/4,
 		 now/0,
 		 now_mili/0,
 		 md5/1,
@@ -60,7 +59,20 @@
          check_blankName/1,
          calc_name_length/1,
          gen_utf8_decode_list/2,
-		 get_total_weight/1
+		 get_total_weight/1,
+		 boolean2int/1,
+	to_hex/1,
+	to_hex2/1,
+	safe_nth/2,
+	safe_split/2,
+	random_one_from_weigh_list/1,
+	random_one_from_list/1,
+	random_list_quick/1,
+	random_list/1,
+	nth_replace/3,
+	upmap/2,
+	dateTimeIntervel_to_second/1,
+	listSelect/2
 		]).
 
 -export([sqlDayToDate/1
@@ -92,7 +104,8 @@
 	getTernaryValueEx/3,
 	formap/3,
 	tupleAdd/3,
-	getValueInSectionList/3
+	getValueInSectionList/3,
+	make_proto/1
 ]).
 
 
@@ -132,16 +145,13 @@ thing_to_list(X) when is_binary(X)  -> binary_to_list(X);
 thing_to_list(X) when is_list(X)    -> X.
 
 %% 日志记录函数
-%% log(T, F, A, Mod, Line) ->
-%%     {ok, Fl} = file:open("logs/error_log.txt", [write, append]),
-%%     Format = list_to_binary("#" ++ T ++" ~s[~w:~w] " ++ F ++ "\r\n~n"),
-%%     {{Y, M, D},{H, I, S}} = erlang:localtime(),
-%%     Date = list_to_binary([integer_to_list(Y),"-", integer_to_list(M), "-", integer_to_list(D), " ", integer_to_list(H), ":", integer_to_list(I), ":", integer_to_list(S)]),
-%%     io:format(Fl, unicode:characters_to_list(Format), [Date, Mod, Line] ++ A),
-%%     file:close(Fl).    
-
-log(_,_,_,_,_) ->
-	ok.
+log(F, A, Mod, Line) ->
+     {ok, Fl} = file:open("logs/error_log.txt", [write, append]),
+     Format = list_to_binary("~s[~w:~w] " ++ F ++ "\r\n~n"),
+     {{Y, M, D},{H, I, S}} = erlang:localtime(),
+     Date = list_to_binary([integer_to_list(Y),"-", integer_to_list(M), "-", integer_to_list(D), " ", integer_to_list(H), ":", integer_to_list(I), ":", integer_to_list(S)]),
+     io:format(Fl, unicode:characters_to_list(Format), [Date, Mod, Line] ++ A),
+     file:close(Fl).
 
 %% @doc 取得当前的unix时间戳,单位：秒
 now() ->
@@ -164,13 +174,6 @@ to_hex(Binary) ->
 
 to_hex2(Binary) ->
 	<< <<(integer_to_binary(E,16))/binary>> || <<E:4>> <= Binary>>.
-
-t(N) ->
-	B = list_to_binary(lists:duplicate(1000,123)),
-	tc:run(N, fun() -> to_hex(B) end).
-t2(N) ->
-	B = list_to_binary(lists:duplicate(1000,123)),
-	tc:run(N, fun() -> to_hex2(B) end).
 
 %%向上取整
 ceil(N) ->
@@ -325,42 +328,42 @@ foldl(F, Acc, [Tail|L]) ->
 foldl(F, Acc, []) when is_function(F,2)->
     Acc.
 
--define(seg_size, 16).
--define(max_seg, 32).
--define(expand_load, 5).
--define(contract_load, 3).
--define(exp_size, (?seg_size * ?expand_load)).
--define(con_size, (?seg_size * ?contract_load)).
--record(dict,
-	{size=0		      :: non_neg_integer(),   	% Number of elements
-	 n=?seg_size	      :: non_neg_integer(),   	% Number of active slots
-	 maxn=?seg_size	      :: non_neg_integer(),	% Maximum slots
-	 bso=?seg_size div 2  :: non_neg_integer(),   	% Buddy slot offset
-	 exp_size=?exp_size   :: non_neg_integer(),   	% Size to expand at
-	 con_size=?con_size   :: non_neg_integer(),   	% Size to contract at
-	 empty		      :: tuple(),		% Empty segment
-	 segs		      :: tuple()	      	% Segments
-	}).
--define(kv(K,V), [K|V]).			% Key-Value pair format
-fold_dict(F, Acc, D) ->
-    Segs = D#dict.segs,
-    fold_segs(F, Acc, Segs, tuple_size(Segs)).
+%%-define(seg_size, 16).
+%%-define(max_seg, 32).
+%%-define(expand_load, 5).
+%%-define(contract_load, 3).
+%%-define(exp_size, (?seg_size * ?expand_load)).
+%%-define(con_size, (?seg_size * ?contract_load)).
+%%-record(dict,
+%%	{size=0		      :: non_neg_integer(),   	% Number of elements
+%%	 n=?seg_size	      :: non_neg_integer(),   	% Number of active slots
+%%	 maxn=?seg_size	      :: non_neg_integer(),	% Maximum slots
+%%	 bso=?seg_size div 2  :: non_neg_integer(),   	% Buddy slot offset
+%%	 exp_size=?exp_size   :: non_neg_integer(),   	% Size to expand at
+%%	 con_size=?con_size   :: non_neg_integer(),   	% Size to contract at
+%%	 empty		      :: tuple(),		% Empty segment
+%%	 segs		      :: tuple()	      	% Segments
+%%	}).
+%%-define(kv(K,V), [K|V]).			% Key-Value pair format
+%%fold_dict(F, Acc, D) ->
+%%    Segs = D#dict.segs,
+%%    fold_segs(F, Acc, Segs, tuple_size(Segs)).
 
-fold_segs(_, {return, Acc}, _, _) -> Acc;
-fold_segs(F, Acc, Segs, I) when I >= 1 ->
-    Seg = element(I, Segs),
-    fold_segs(F, fold_seg(F, Acc, Seg, tuple_size(Seg)), Segs, I-1);
-fold_segs(F, Acc, _, 0) when is_function(F, 3) -> Acc.
-
-fold_seg(_, {return, _}=Acc, _, _) -> Acc;
-fold_seg(F, Acc, Seg, I) when I >= 1 ->
-    fold_seg(F, fold_bucket(F, Acc, element(I, Seg)), Seg, I-1);
-fold_seg(F, Acc, _, 0) when is_function(F, 3) -> Acc.
-
-fold_bucket(_, {return, _}=Acc, _) -> Acc; 
-fold_bucket(F, Acc, [?kv(Key,Val)|Bkt]) ->
-    fold_bucket(F, F(Key, Val, Acc), Bkt);
-fold_bucket(F, Acc, []) when is_function(F, 3) -> Acc.
+%%fold_segs(_, {return, Acc}, _, _) -> Acc;
+%%fold_segs(F, Acc, Segs, I) when I >= 1 ->
+%%    Seg = element(I, Segs),
+%%    fold_segs(F, fold_seg(F, Acc, Seg, tuple_size(Seg)), Segs, I-1);
+%%fold_segs(F, Acc, _, 0) when is_function(F, 3) -> Acc.
+%%
+%%fold_seg(_, {return, _}=Acc, _, _) -> Acc;
+%%fold_seg(F, Acc, Seg, I) when I >= 1 ->
+%%    fold_seg(F, fold_bucket(F, Acc, element(I, Seg)), Seg, I-1);
+%%fold_seg(F, Acc, _, 0) when is_function(F, 3) -> Acc.
+%%
+%%fold_bucket(_, {return, _}=Acc, _) -> Acc;
+%%fold_bucket(F, Acc, [?kv(Key,Val)|Bkt]) ->
+%%    fold_bucket(F, F(Key, Val, Acc), Bkt);
+%%fold_bucket(F, Acc, []) when is_function(F, 3) -> Acc.
 
 to_list(A) when is_binary(A) ->
 	binary_to_list(A);
@@ -996,9 +999,6 @@ formap(_,_,_) ->
 
 dateTimeIntervel_to_second({Day,Hour,Min,Sec})->
 	Day*?ONE_DAY_SECONDS+Hour*?ONE_HOUR_SECONDS+Min*60+Sec.
-
-is_robot(RoleID)->
-    (RoleID rem 1000000) < 10000.
 
 listSelect(Conditions, List) ->
 	lists:filter(fun(Data) -> lists:all(fun({Index,Value}) -> element(Index,Data) == Value end, Conditions) end, List).

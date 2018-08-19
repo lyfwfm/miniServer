@@ -11,5 +11,7 @@ CREATE TABLE `gRole` (
   `loginTimestamp` int(10) unsigned DEFAULT 0 COMMENT '登陆时间戳',
   `offlineTimestamp` int(10) unsigned DEFAULT 0 COMMENT '离线时间戳',
   `lastRewardLoginTimestamp` int(10) unsigned DEFAULT 0 COMMENT '上次领取登陆奖励的时间戳',
+  `speedLoginTimestamp` int(10) unsigned DEFAULT 0 COMMENT '加速结束的时间戳',
+  `incFishID` bigint(11) unsigned DEFAULT 0 COMMENT '自增的鱼唯一ID，自己计数',
   PRIMARY KEY (`roleID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

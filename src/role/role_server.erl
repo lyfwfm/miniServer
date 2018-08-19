@@ -12,6 +12,7 @@
 -behaviour(gen_server).
 
 -include("common.hrl").
+-include_lib("stdlib/include/ms_transform.hrl").
 
 %% API
 -export([start_link/0]).
@@ -24,16 +25,13 @@
 	terminate/2,
 	code_change/3]).
 
--export([getRole/1, getRoleProperty/2, isRoleExist/1,operateRole/2,insertRole/1]).
+-export([getRole/1, getRoleProperty/2, isRoleExist/1,operateRole/2,insertRole/1,offlineRole/1]).
 
 -define(SERVER, ?MODULE).
 
 -record(state, {}).
 -define(LOOP_TIME, 1 * 1000).
 -define(HEART_BEAT_OFF_TIME, 60).
-
--define(ETS_ROLE, ets_role).%%进程保存所有玩家信息的ETS
-
 
 %%%===================================================================
 %%% API
@@ -130,6 +128,8 @@ handle_info(Info, State) ->
 				doOperateRole(RoleID, OperateList);
 			{insertRole, Role} ->
 				setRole(Role);
+			{offlineRole, RoleID} ->
+				doRoleOffline(getRole(RoleID));
 			_ ->
 				?ERR("no match Info=~p", [Info])
 		end
@@ -188,7 +188,7 @@ getRoleProperty(RoleID, PropertyIndex) ->
 
 setRole(Role) ->
 	ets:insert(?ETS_ROLE, Role),
-	db_sql:setRole(Role).
+	spawn(db_sql,setRole,[Role]).
 
 %%inner
 isRoleExist(RoleID) ->
@@ -201,6 +201,8 @@ operateRole(RoleID,OperateList) ->
 	?SERVER ! {operateRole, RoleID, OperateList}.
 insertRole(Role) ->
 	?SERVER ! {insertRole, Role}.
+offlineRole(RoleID) ->
+	?SERVER ! {offlineRole, RoleID}.
 
 
 %%%===================================================================
@@ -209,7 +211,7 @@ insertRole(Role) ->
 do_heartbeat() ->
 	Now = util:now(),
 	Func = fun(#role{heartbeatTimestamp = Heartbeat,
-		money = OldMoney, fishList = FishList} = Role) ->
+		money = OldMoney, fishList = FishList,speedTimestamp = SpeedTimestamp} = Role) ->
 		case Now - Heartbeat > ?HEART_BEAT_OFF_TIME of
 			?TRUE ->%%判定离线
 				doRoleOffline(Role);
@@ -217,7 +219,9 @@ do_heartbeat() ->
 				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime} = Fish, {AccMoney, AccFishList}) ->
 					case FishState of
 						?FISH_STATE_WORKING ->
-							case Now - WorkTime >= 5 of%%todo 鱼的赚钱间隔时间
+							IsSpeedUp = SpeedTimestamp >= Now,
+							MakeMoneyInternalTime = util:getTernaryValue(IsSpeedUp,2,4),%%todo 鱼的赚钱间隔时间
+							case Now - WorkTime >= MakeMoneyInternalTime of
 								?TRUE ->
 									AddMoney = 999,%%todo 配置钱数量
 									{AccMoney + AddMoney, [Fish#fish{worktimestamp = Now} | AccFishList]};
@@ -240,7 +244,7 @@ do_heartbeat() ->
 
 doRoleOffline(Role) ->
 	ets:delete(?ETS_ROLE, Role#role.deviceID),
-	db_sql:setRole(Role#role{offlineTimestamp = util:now()}).
+	spawn(db_sql,setRole,[Role#role{offlineTimestamp = util:now()}]).
 
 doOperateRole(RoleID, OperateList) ->
 	Role = getRole(RoleID),

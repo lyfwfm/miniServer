@@ -25,7 +25,6 @@
 	| {error, Reason :: term()}.
 %% ====================================================================
 start(_Type, _StartArgs) ->
-	%db:start(),
 	db:connect_mysql(),
     case 'db_sup':start_link() of
 		{ok, Pid} ->

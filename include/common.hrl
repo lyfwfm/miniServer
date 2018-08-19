@@ -12,6 +12,8 @@
 -define(UNDEFINED, undefined).
 -define(SUCCESS, "success").
 
+-define(ETS_ROLE, ets_role).%%进程保存所有玩家信息的ETS
+
 -define(FISH_STATE_IDLE,0).
 -define(FISH_STATE_WORKING,1).
 -record(fish,{
@@ -32,7 +34,9 @@
 	loginTimestamp=0,
 	offlineTimestamp=0,
 	lastRewardLoginTimestamp=0,%%领取登陆奖励的时间戳
-	heartbeatTimestamp=0
+	heartbeatTimestamp=0,
+	speedTimestamp=0,%%加速的结束时间戳
+	incFishID=0%%自增的鱼唯一ID，自己计数
 }).
 -json({role,{string,"name"}}).
 
@@ -89,6 +93,6 @@
 %% 错误信息
 %%-define(ERR(Format), logger:error_msg(?MODULE,?LINE, Format, [])).
 %%-define(ERR(Format, Args), logger:error_msg(?MODULE,?LINE, Format, Args)).
--define(ERR(Format), error_logger:error_msg(Format, [])).
--define(ERR(Format, Args), error_logger:error_msg(Format, Args)).
+-define(ERR(Format), error_logger:error_msg(Format, []),util:log(Format,[],?MODULE,?LINE)).
+-define(ERR(Format, Args), error_logger:error_msg(Format, Args),util:log(Format,Args,?MODULE,?LINE)).
 %%-------------------------------------------------------------------------

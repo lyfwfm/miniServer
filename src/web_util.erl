@@ -34,26 +34,27 @@ route(Req) ->
 		FuncName = proplists:get_value("funcname", Json),
 		case FuncName of
 			"login" ->%%登陆，获取玩家数据
-				role:cs_login(Req,FuncName,[999]);
-%%				role:cs_login(Req, getValueListFromReq(Json));
+				spawn_out(role,cs_login,Req);
 			"create_role" ->%%创建玩家信息
-				role:cs_create_role(Req,FuncName,[999,"firstRole"]);
+				spawn_out(role,cs_create_role,Req);
 			"put_fish" ->%%放入鱼工作
-				todo;
+				spawn_out(role,cs_put_fish,Req);
 			"remove_fish" -> %%收回鱼，不工作
-				todo;
+				spawn_out(role,cs_remove_fish,Req);
 			"merge" -> %%合成鱼
-				todo;
+				spawn_out(role,cs_merge_fish,Req);
 			"sell_fish" -> %%售卖鱼
-				todo;
+				spawn_out(role,cs_sell_fish,Req);
 			"buy_fish" -> %%购买鱼
-				todo;
+				spawn_out(role,cs_buy_fish,Req);
 			"speed_up" -> %%加速
-				todo;
+				spawn_out(role,cs_speed_up,Req);
 			"heart_beat" ->%%心跳
-				todo;
+				spawn_out(role,cs_heart_beat,Req);
 			"offline" ->%%离线
-				todo;
+				spawn_out(role,cs_offline,Req);
+			"get_rank" ->%%获取排行榜
+				spawn_out(role,cs_get_rank,Req);
 			_ -> Req:ok({"text/html", <<"no_match_function">>})
 		end,
 		ok
@@ -73,3 +74,8 @@ getValueListFromReq(Json) ->
 	                   end, Keys),
 	io:format("Json=~p,Value=~p,Keys=~p,Values=~p~n", [Json, Value, Keys, Values]),
 	Values.
+
+spawn_out(Module,Function,Req) ->
+	Json = mochiweb_request:parse_qs(Req),
+	FuncName = proplists:get_value("funcname", Json),
+	spawn(Module,Function,[Req,FuncName,getValueListFromReq(Req)]).

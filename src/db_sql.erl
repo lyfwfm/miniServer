@@ -3,12 +3,11 @@
 
 
 -module(db_sql).
--compile(export_all).
 -include("common.hrl").
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([]).
+-export([getRole/1,setRole/1,isRoleExist/1]).
 
 -define(GET_SQL_MAIL_NUM, 70).% the max num of mails get from sql once
 
@@ -19,32 +18,28 @@
 %%	{{Y, M, _}, _} = erlang:localtime(),
 %%	lists:flatten(io_lib:format("~w_~w_~w", [TableName,Y,M])).
 
-test_select(ID) ->
-	Sql = io_lib:format("select * from gRole where roleID = ~w",[ID]),
-	get_row(Sql).
-test_insert(ID,Name) ->
-	Sql = io_lib:format("replace into gRole values (~w,~s)",[ID,quote(Name)]),
-	sql_execute_with_log(Sql).
-
 getRole(RoleID) ->
 	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
 	case get_row(Sql) of
 		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList,
-			LoginTimestamp,OfflineTimestamp,LastRewardLoginTimestamp] ->
+			LoginTimestamp,OfflineTimestamp,LastRewardLoginTimestamp,SpeedTimestamp,
+			IncFishID] ->
 			#role{deviceID = RoleID,roleName = Name,money = Money,gold = Gold,fishList = to_term(FishList),
 				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList),
-				loginTimestamp = LoginTimestamp,offlineTimestamp = OfflineTimestamp,lastRewardLoginTimestamp = LastRewardLoginTimestamp};
+				loginTimestamp = LoginTimestamp,offlineTimestamp = OfflineTimestamp,lastRewardLoginTimestamp = LastRewardLoginTimestamp,
+				speedTimestamp = SpeedTimestamp,incFishID = IncFishID};
 		_ -> #role{deviceID = RoleID}
 	end.
 setRole(Role) ->
-	Sql = io_lib:format("replace into gRole values (~w,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w)",
+	Sql = io_lib:format("replace into gRole values (~w,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w,~w,~w)",
 		[
 			Role#role.deviceID,quote(Role#role.roleName),
 			Role#role.money,Role#role.gold,
 			to_bin(Role#role.fishList),Role#role.loginDays,
 			Role#role.unlockFishCfgID,to_bin(Role#role.fishBuyList),
 			Role#role.loginTimestamp,Role#role.offlineTimestamp,
-			Role#role.lastRewardLoginTimestamp
+			Role#role.lastRewardLoginTimestamp,Role#role.speedTimestamp,
+			Role#role.incFishID
 		]),
 	sql_execute_with_log(Sql).
 isRoleExist(RoleID)->

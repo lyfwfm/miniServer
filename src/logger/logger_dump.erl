@@ -6,7 +6,6 @@
 %% 为什么没有做这个？因为错误日志，在大部分时候应该是很小的。
 
 -behaviour(gen_server).
--compile(export_all).
 -include("common.hrl").
 %% API
 -export([
