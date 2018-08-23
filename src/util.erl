@@ -106,7 +106,8 @@
 	tupleAdd/3,
 	getValueInSectionList/3,
 	make_proto/1,
-	tryString2int/1
+	tryString2int/1,
+	tryTerm2String/1
 ]).
 
 
@@ -1113,3 +1114,7 @@ tryString2int(Str) ->
 	catch
 		_:_Why -> Str
 	end.
+
+tryTerm2String(Atom)when is_atom(Atom) -> erlang:atom_to_list(Atom);
+tryTerm2String(Integer)when is_integer(Integer) -> erlang:integer_to_list(Integer);
+tryTerm2String(List)when is_list(List) -> List.
