@@ -32,7 +32,7 @@ def make_hrl_content(fileName,jsonTupleList):
 	
 def make_content(fileName,jsonTupleList):
 	recordName=os.path.splitext(fileName)[0]
-	content="-module("+recordName+").\r\n-compile(export_all).\r\n"
+	content="-module("+recordName+").\r\n-export([get/1]).\r\n"
 	for i in range(0,len(jsonTupleList)):
 		# 对每个json对象操作
 		content = content+"get("+str(list(jsonTupleList[i].values())[0])+")->{"+recordName

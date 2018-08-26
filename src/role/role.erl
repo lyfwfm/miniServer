@@ -237,7 +237,7 @@ checkLoginDays(#role{loginDays = OldDays,offlineTimestamp = OffTime}) ->
 	{OffDate,_} = util:seconds_to_datetime(OffTime+?ONE_DAY_SECONDS),
 	NowDate = erlang:date(),
 	case OffTime == 0 orelse NowDate =:= OffDate of
-		?TRUE -> OldDays+1;
+		?TRUE -> min(OldDays+1,7);%%到7天后，每次连续登陆就是7的奖励
 		_ -> 1
 	end.
 
