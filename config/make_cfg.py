@@ -32,10 +32,10 @@ def make_hrl_content(fileName,jsonTupleList):
 	
 def make_content(fileName,jsonTupleList):
 	recordName=os.path.splitext(fileName)[0]
-	content=""
+	content="-module("+recordName+").\r\n-compile(export_all).\r\n"
 	for i in range(0,len(jsonTupleList)):
 		# 对每个json对象操作
-		content = content+"get("+str(jsonTupleList[i]['id'])+")->{"+recordName
+		content = content+"get("+str(list(jsonTupleList[i].values())[0])+")->{"+recordName
 		for jsonKey in jsonTupleList[i]:
 			value=jsonTupleList[i][jsonKey]
 			isdigital = isDigital(value)
@@ -45,25 +45,25 @@ def make_content(fileName,jsonTupleList):
 				content = content+",\""+str(value)+"\""
 		content=content+"};\r\n"
 	content=content+"get(_)->{}."
-	erlFile = open(recordName+".erl",'w')
+	erlFile = open(recordName+".erl",'w',encoding='utf-8')
 	erlFile.write(content)
 	erlFile.close()
 
-rootdir = os.getcwd()
+def main():
+	rootdir = os.getcwd()
+	fileList = os.listdir(rootdir) #列出文件夹下所有的目录与文件
+	for i in range(0,len(fileList)):
+		fileName=fileList[i]
+		filePath = os.path.join(rootdir,fileName)
+		if os.path.isfile(filePath):
+			if os.path.splitext(fileName)[1]=='.json':
+				#你想对文件的操作
+				jsonTuple=readJsonFile(fileName)
+				make_hrl_content(fileName,jsonTuple)
+				make_content(fileName,jsonTuple)
+				print("make cfg file:"+fileName+" success")
+				
+	time.sleep(99999)
 
-
-list = os.listdir(rootdir) #列出文件夹下所有的目录与文件
-for i in range(0,len(list)):
-	fileName=list[i]
-	filePath = os.path.join(rootdir,fileName)
-	if os.path.isfile(filePath):
-		if os.path.splitext(fileName)[1]=='.json':
-			#你想对文件的操作
-			jsonTuple=readJsonFile(fileName)
-			make_hrl_content(fileName,jsonTuple)
-			make_content(fileName,jsonTuple)
-			print("make cfg file:"+fileName+" success")
-			
-
-time.sleep(99999)
+main()
 

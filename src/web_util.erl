@@ -15,14 +15,16 @@
 -export([route/1, send/2, send/4]).
 
 send(Req, FuncName, Ret, {}) ->
-	RetString = "{\"name\":" ++ FuncName ++ "},{\"code\":" ++ Ret ++ "},{\"data\":{}}",
+	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":{}}}",
 	Json2 = binary:list_to_bin(RetString),
+	?INFO("Json = ~p",[Json2]),
 	Req:ok({"text/html", Json2});
 send(Req, FuncName, Ret, Msg) ->
 	{ok, Json} = to_json(Msg),
 	%%{"name":Name},{"code":Code},{"data":Data}
-	RetString = "{\"name\":" ++ FuncName ++ "},{\"code\":" ++ Ret ++ "},{\"data\":",
-	Json2 = binary:list_to_bin(RetString ++ binary:bin_to_list(Json) ++ "}"),
+	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":",
+	Json2 = binary:list_to_bin(RetString ++ binary:bin_to_list(Json) ++ "}}"),
+	?INFO("Json = ~p",[Json2]),
 	Req:ok({"text/html", Json2}).
 send(Req, Json) ->
 	Req:ok({"text/html", Json}).
@@ -31,6 +33,7 @@ send(Req, Json) ->
 route(Req) ->
 	try
 		Json = mochiweb_request:parse_qs(Req),
+		?INFO("from client Json=~p",[Json]),
 		FuncName = proplists:get_value("funcname", Json),
 		case FuncName of
 			"login" ->%%登陆，获取玩家数据

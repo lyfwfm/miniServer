@@ -3,7 +3,8 @@
 		"src/*",
 		"src/logger/*",
 		"src/db/*",
-		"src/role/*"
+		"src/role/*",
+		"config/*"
 	],
 	[
 		{i,"include"},

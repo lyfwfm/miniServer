@@ -1,0 +1,30 @@
+[
+    {
+        "day":1,
+        "diamond":"30"
+    },
+    {
+        "day":2,
+        "diamond":"30"
+    },
+    {
+        "day":3,
+        "diamond":"30"
+    },
+    {
+        "day":4,
+        "diamond":"40"
+    },
+    {
+        "day":5,
+        "diamond":"50"
+    },
+    {
+        "day":6,
+        "diamond":"60"
+    },
+    {
+        "day":7,
+        "diamond":"70"
+    }
+]
