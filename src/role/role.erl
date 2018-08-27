@@ -47,6 +47,7 @@ cs_login(Req,FuncName,[RoleID]) ->
 				diamond = NewGold,
 				offline_gold = OfflineMoney,
 				login_days = NewLoginDays,
+				is_login_reward = LoginGold>0,
 				unlocked_fishes = OldRole#role.unlockFishCfgID,
 				fish_buy_list = [#pk_fish_buy{cfg_id = FishCfgID,buy_count = BuyCount}
 				|| {FishCfgID,BuyCount} <- OldRole#role.fishBuyList]
@@ -82,6 +83,7 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				diamond = LoginGold,
 				offline_gold = 0,
 				login_days = 1,
+				is_login_reward = ?FALSE,
 				unlocked_fishes = Role#role.unlockFishCfgID,
 				fish_buy_list = [#pk_fish_buy{cfg_id = 1,buy_count = 1}]
 			},
