@@ -244,7 +244,7 @@ cs_get_rank(Req,FuncName,[RoleID]) ->
 %%计算离线收益
 calcOfflineMoney(Role) ->
 	Now = util:now(),
-	OfflineTime = Now - max(Role#role.offlineTimestamp,Role#role.loginTimestamp),
+	OfflineTime = Now - lists:max([Role#role.offlineTimestamp,Role#role.loginTimestamp,Role#role.heartbeatTimestamp]),
 	{SpeedTime,NormalTime}=case Role#role.speedTimestamp > Now of
 		?TRUE ->
 			{OfflineTime,0};
