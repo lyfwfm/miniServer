@@ -27,11 +27,13 @@ cs_login(Req,FuncName,[RoleID]) ->
 			%%检测连续登陆天数
 			NewLoginDays = checkLoginDays(OldRole),
 			%%检测发放连续登陆奖励
-			LoginMoney = checkLoginReward(OldRole#role.lastRewardLoginTimestamp,NewLoginDays),
-			NewMoney = OldRole#role.money+OfflineMoney+LoginMoney,
+			LoginGold = checkLoginReward(OldRole#role.lastRewardLoginTimestamp,NewLoginDays),
+			NewMoney = OldRole#role.money+OfflineMoney,
+			NewGold = OldRole#role.gold+LoginGold,
 			Now = util:now(),
 			OperateList = [
-				{add,#role.money,OfflineMoney+LoginMoney},
+				{add,#role.money,OfflineMoney},
+				{add,#role.gold,LoginGold},
 				{set,#role.loginTimestamp,Now},
 				{set,#role.loginDays,NewLoginDays},
 				{set,#role.lastRewardLoginTimestamp,Now}
@@ -42,6 +44,7 @@ cs_login(Req,FuncName,[RoleID]) ->
 				packageFishlist = [#pk_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
 					|| Fish <- OldRole#role.fishList],
 				gold = NewMoney,
+				diamond = NewGold,
 				offline_gold = OfflineMoney,
 				login_days = NewLoginDays,
 				unlocked_fishes = OldRole#role.unlockFishCfgID,
@@ -57,12 +60,13 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 		?TRUE -> web_util:send(Req,FuncName,"have_role",{});
 		_ ->
 			Now = util:now(),
-			LoginMoney = checkLoginReward(0,1),
+			LoginGold = checkLoginReward(0,1),
 			Role = #role{
 				deviceID = RoleID,
 				roleName = RoleName,
 				loginDays = 1,
-				money = LoginMoney,
+				money = 0,
+				gold = LoginGold,
 				unlockFishCfgID = 1,
 				loginTimestamp = Now,
 				lastRewardLoginTimestamp = Now,
@@ -74,7 +78,8 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 			Msg=#sc_login{
 				userName = RoleName,
 				packageFishlist = [],
-				gold = LoginMoney,
+				gold = 0,
+				diamond = LoginGold,
 				offline_gold = 0,
 				login_days = 1,
 				unlocked_fishes = Role#role.unlockFishCfgID,
@@ -195,9 +200,16 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 				%%产生新鱼
 				NewFishID = Role#role.incFishID + 1,
 				NewFish = #fish{fishID = NewFishID, cfgID = FishCfgID},
+				NewFishBuyList = case lists:keytake(FishCfgID,1,Role#role.fishBuyList) of
+					{value,{_,OldCount},T} -> [{FishCfgID,OldCount+1}|T];
+					_ -> [{FishCfgID,1}|Role#role.fishBuyList]
+				end,
 				role_server:operateRole(RoleID, [
 					{add, #role.incFishID, 1},
-					{dec, #role.money, CostMoney}, {set, #role.fishList, [NewFish | Role#role.fishList]}]),
+					{dec, #role.money, CostMoney},
+					{set, #role.fishList, [NewFish | Role#role.fishList]},
+					{set,#role.fishBuyList,NewFishBuyList}
+				]),
 				Msg = #sc_buy_fish{id = NewFishID, cfg_id = FishCfgID},
 				web_util:send(Req, FuncName, ?SUCCESS, Msg);
 			_ -> web_util:send(Req, FuncName, "not_enough_money", {})
@@ -232,7 +244,7 @@ cs_get_rank(Req,FuncName,[RoleID]) ->
 %%计算离线收益
 calcOfflineMoney(Role) ->
 	Now = util:now(),
-	OfflineTime = Now - Role#role.offlineTimestamp,
+	OfflineTime = Now - max(Role#role.offlineTimestamp,Role#role.loginTimestamp),
 	{SpeedTime,NormalTime}=case Role#role.speedTimestamp > Now of
 		?TRUE ->
 			{OfflineTime,0};

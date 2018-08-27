@@ -4,7 +4,7 @@
 [pk_fish,{id,number},{cfg_id,number},{isWorking,boolean}].
 [pk_fish_buy,{cfg_id,number},{buy_count,number}].
 %%登陆
-[sc_login,{userName,string},{packageFishlist,list,pk_fish},{gold,number},{offline_gold,number},{login_days,number},{unlocked_fishes,number},{fish_buy_list,list,pk_fish_buy}].
+[sc_login,{userName,string},{packageFishlist,list,pk_fish},{gold,number},{diamond,number},{offline_gold,number},{login_days,number},{unlocked_fishes,number},{fish_buy_list,list,pk_fish_buy}].
 
 %%放鱼 不用数据
 %%收鱼 不用数据
