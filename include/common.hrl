@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -author("chenlong").
 -include("msg.hrl").
+-include("cfg_record.hrl").
 
 -define(UNDEFINED, undefined).
 -define(SUCCESS, "success").

@@ -1,4 +1,4 @@
-%%
+%%只定义服务器到客户端的协议
 
 
 [pk_fish,{id,number},{cfg_id,number},{isWorking,boolean}].

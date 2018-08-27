@@ -1,5 +1,5 @@
 %% @author crimoon11
-%% @doc @todo Add description to db_sql.
+%% @doc
 
 
 -module(db_sql).

@@ -222,10 +222,12 @@ do_heartbeat() ->
 					case FishState of
 						?FISH_STATE_WORKING ->
 							IsSpeedUp = SpeedTimestamp >= Now,
-							MakeMoneyInternalTime = util:getTernaryValue(IsSpeedUp,2,4),%%todo 鱼的赚钱间隔时间
+							FishCfg = fish_cfg:get(FishCfgID),
+							NormalTime = util:getTupleValue(FishCfg,#fish_cfg.time,4),
+							MakeMoneyInternalTime = util:getTernaryValue(IsSpeedUp,trunc(NormalTime/2),NormalTime),%%鱼的赚钱间隔时间
 							case Now - WorkTime >= MakeMoneyInternalTime of
 								?TRUE ->
-									AddMoney = FishCfgID,%%todo 配置钱数量
+									AddMoney = util:getTupleValue(FishCfg,#fish_cfg.income,0),%%配置钱数量
 									{AccMoney + AddMoney, [Fish#fish{worktimestamp = Now} | AccFishList]};
 								_ -> {AccMoney, [Fish | AccFishList]}
 							end;

@@ -63,11 +63,11 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				roleName = RoleName,
 				loginDays = 1,
 				money = LoginMoney,
-				unlockFishCfgID = 0,%%todo
+				unlockFishCfgID = 1,
 				loginTimestamp = Now,
 				lastRewardLoginTimestamp = Now,
 				heartbeatTimestamp = Now,
-				fishList = [#fish{fishID = 1,cfgID = 10}]
+				fishList = [#fish{fishID = 1,cfgID = 1}]
 			},
 			role_server:insertRole(Role),
 			Msg=#sc_login{
@@ -76,7 +76,7 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				gold = LoginMoney,
 				offline_gold = 0,
 				login_days = 1,
-				unlocked_fishes = 0,%%todo
+				unlocked_fishes = Role#role.unlockFishCfgID,
 				fish_buy_list = []
 			},
 			web_util:send(Req,FuncName,?SUCCESS,Msg)
@@ -119,36 +119,41 @@ cs_remove_fish(Req,FuncName,[RoleID,FishID]) ->
 cs_merge_fish(Req,FuncName,[RoleID,FishID1,FishID2]) ->
 	Role = role_server:getRole(RoleID),
 	case lists:keytake(FishID1,#fish.fishID,Role#role.fishList) of
-		{value,#fish{state = FishState1},T1} ->
+		{value,#fish{state = FishState1, cfgID = CfgID1},T1} ->
 			case FishState1 =:= ?FISH_STATE_IDLE of
 				?TRUE ->
 					case lists:keytake(FishID2,#fish.fishID,T1) of
-						{value,#fish{state = FishState2},T2} ->
+						{value,#fish{state = FishState2, cfgID = CfgID2},T2} ->
 							case FishState2 =:= ?FISH_STATE_IDLE of
 								?TRUE ->
-									NewFishID =Role#role.incFishID+1,
-									NewFishCfgID = todo,
-									NewFish = #fish{fishID = NewFishID,cfgID = NewFishCfgID},%%产生新鱼
-									NewFishList = [NewFish|T2],
-									HigherCfgID = case NewFishCfgID > Role#role.unlockFishCfgID of
+									%%两条鱼是否配置相同
+									case CfgID1 =:= CfgID2 of
 										?TRUE ->
-											role_server:operateRole(RoleID,[
-												{add,#role.incFishID,1},
-												{set,#role.fishList,NewFishList},
-												{set,#role.unlockFishCfgID,NewFishCfgID}]),
-										              NewFishCfgID;
-										_ ->
-											role_server:operateRole(RoleID,[
-												{add,#role.incFishID,1},
-												{set,#role.fishList,NewFishList}]),
-											Role#role.unlockFishCfgID
-									end,
-									Msg = #sc_merge_fish{
-										id = NewFishID,
-										cfg_id = NewFishCfgID,
-										unlock_cfg_id = HigherCfgID
-									},
-									web_util:send(Req,FuncName,?SUCCESS,Msg);
+											NewFishID =Role#role.incFishID+1,
+											NewFishCfgID = CfgID1+1,
+											NewFish = #fish{fishID = NewFishID,cfgID = NewFishCfgID},%%产生新鱼
+											NewFishList = [NewFish|T2],
+											HigherCfgID = case NewFishCfgID > Role#role.unlockFishCfgID of
+												              ?TRUE ->
+													              role_server:operateRole(RoleID,[
+														              {add,#role.incFishID,1},
+														              {set,#role.fishList,NewFishList},
+														              {set,#role.unlockFishCfgID,NewFishCfgID}]),
+													              NewFishCfgID;
+												              _ ->
+													              role_server:operateRole(RoleID,[
+														              {add,#role.incFishID,1},
+														              {set,#role.fishList,NewFishList}]),
+													              Role#role.unlockFishCfgID
+											              end,
+											Msg = #sc_merge_fish{
+												id = NewFishID,
+												cfg_id = NewFishCfgID,
+												unlock_cfg_id = HigherCfgID
+											},
+											web_util:send(Req,FuncName,?SUCCESS,Msg);
+										_ -> web_util:send(Req,FuncName,"fish_not_the_same",{})
+									end;
 								_ -> web_util:send(Req,FuncName,"fish_not_idle",{})
 							end;
 						_ -> web_util:send(Req,FuncName,"no_this_fish",{})
@@ -162,7 +167,8 @@ cs_sell_fish(Req,FuncName,[RoleID,FishID]) ->
 	Role = role_server:getRole(RoleID),
 	case lists:keytake(FishID,#fish.fishID,Role#role.fishList) of
 		{value, #fish{cfgID = FishCfgID},T} ->
-			AddMoney = FishCfgID,%%todo
+			FishCfg = fish_cfg:get(FishCfgID),
+			AddMoney = trunc(util:getTupleValue(FishCfg,#fish_cfg.price,0)/2),
 			role_server:operateRole(RoleID,[{add,#role.money,AddMoney},{set,#role.fishList,T}]),
 			Msg = #sc_sell_fish{gold = AddMoney},
 			web_util:send(Req,FuncName,?SUCCESS,Msg);
@@ -171,7 +177,8 @@ cs_sell_fish(Req,FuncName,[RoleID,FishID]) ->
 
 cs_buy_fish(Req,FuncName,[RoleID,FishCfgID]) ->
 	Role = role_server:getRole(RoleID),
-	CostMoney = FishCfgID,%%todo
+	FishCfg = fish_cfg:get(FishCfgID),
+	CostMoney = util:getTupleValue(FishCfg,#fish_cfg.price,0),
 	case Role#role.money >= CostMoney of
 		?TRUE ->
 			%%产生新鱼
@@ -225,8 +232,9 @@ calcOfflineMoney(Role) ->
 	CalcFunc = fun(#fish{cfgID = CfgID,state = FishState}) ->
 		case FishState of
 			?FISH_STATE_WORKING ->
-				EachMoney = CfgID,%%todo 读取配置
-				EachMoney * NormalTime+EachMoney * 2 * SpeedTime;
+				FishCfg = fish_cfg:get(CfgID),
+				EachMoney = util:getTupleValue(FishCfg,#fish_cfg.income,0)/util:getTupleValue(FishCfg,#fish_cfg.time,1),%%算出每秒产出
+				trunc(EachMoney * NormalTime+EachMoney * 2 * SpeedTime);
 			_ -> 0
 		end
 		end,
