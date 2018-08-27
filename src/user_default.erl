@@ -10,10 +10,15 @@
 -author("chenlong").
 
 %% API
--export([start/0,run/0]).
+-export([start/0,run/0,startAndRun/0]).
 
 start() ->
 	tk:start().
 
 run() ->
 	tk:run().
+
+startAndRun() ->
+	start(),
+	timer:sleep(5000),
+	run().
