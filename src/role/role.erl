@@ -67,7 +67,8 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				loginTimestamp = Now,
 				lastRewardLoginTimestamp = Now,
 				heartbeatTimestamp = Now,
-				fishList = [#fish{fishID = 1,cfgID = 1}]
+				fishList = [#fish{fishID = 1,cfgID = 1}],
+				fishBuyList = [{1,1}]
 			},
 			role_server:insertRole(Role),
 			Msg=#sc_login{
@@ -77,7 +78,7 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 				offline_gold = 0,
 				login_days = 1,
 				unlocked_fishes = Role#role.unlockFishCfgID,
-				fish_buy_list = []
+				fish_buy_list = [#pk_fish_buy{cfg_id = 1,buy_count = 1}]
 			},
 			web_util:send(Req,FuncName,?SUCCESS,Msg)
 	end.
@@ -175,21 +176,34 @@ cs_sell_fish(Req,FuncName,[RoleID,FishID]) ->
 		_ -> web_util:send(Req,FuncName,"no_this_fish",{})
 	end.
 
-cs_buy_fish(Req,FuncName,[RoleID,FishCfgID]) ->
-	Role = role_server:getRole(RoleID),
-	FishCfg = fish_cfg:get(FishCfgID),
-	CostMoney = util:getTupleValue(FishCfg,#fish_cfg.price,0),
-	case Role#role.money >= CostMoney of
-		?TRUE ->
-			%%产生新鱼
-			NewFishID = Role#role.incFishID+1,
-			NewFish = #fish{fishID = NewFishID,cfgID = FishCfgID},
-			role_server:operateRole(RoleID,[
-				{add,#role.incFishID,1},
-				{dec,#role.money,CostMoney},{set,#role.fishList,[NewFish|Role#role.fishList]}]),
-			Msg = #sc_buy_fish{id = NewFishID,cfg_id = FishCfgID},
-			web_util:send(Req,FuncName,?SUCCESS,Msg);
-		_ -> web_util:send(Req,FuncName,"not_enough_money",{})
+cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
+	try
+		Role = role_server:getRole(RoleID),
+		FishBuyList = Role#role.fishBuyList,
+		%%购买个数不超过12
+		case lists:keyfind(FishCfgID, 1, FishBuyList) of
+			{_, Count} ->
+				case Count >= 12 of
+					?TRUE -> throw("out_of_buy_count");
+					_ -> ok
+				end;
+			_ -> ok
+		end,
+		CostMoney = getFishCostMoney(FishBuyList, FishCfgID),
+		case Role#role.money >= CostMoney of
+			?TRUE ->
+				%%产生新鱼
+				NewFishID = Role#role.incFishID + 1,
+				NewFish = #fish{fishID = NewFishID, cfgID = FishCfgID},
+				role_server:operateRole(RoleID, [
+					{add, #role.incFishID, 1},
+					{dec, #role.money, CostMoney}, {set, #role.fishList, [NewFish | Role#role.fishList]}]),
+				Msg = #sc_buy_fish{id = NewFishID, cfg_id = FishCfgID},
+				web_util:send(Req, FuncName, ?SUCCESS, Msg);
+			_ -> web_util:send(Req, FuncName, "not_enough_money", {})
+		end
+	catch
+		throw:Error -> web_util:send(Req, FuncName, Error, {})
 	end.
 
 cs_speed_up(Req,FuncName,[RoleID]) ->
@@ -254,7 +268,9 @@ checkLoginReward(LastRewardTimestamp,LoginDays) ->
 	NowDate = erlang:date(),
 	case NowDate =:= LastDate of
 		?TRUE -> 0;%%已经领取过了
-		_ -> LoginDays*100%%todo 读取配置
+		_ ->
+			LoginRewardCfg = reward:get(LoginDays),
+			util:getTupleValue(LoginRewardCfg,#reward.diamond,0)
 	end.
 
 isWorkingFishFull(#role{fishList = FishList}) ->
@@ -280,3 +296,11 @@ sortAndSend(Req,FuncName,RoleID,RoleList) ->
 		rank_list = MsgRankList
 	},
 	web_util:send(Req,FuncName,?SUCCESS,Msg).
+
+getFishCostMoney(FishBuyList,FishCfgID) ->
+	FishCfg = fish_cfg:get(FishCfgID),
+	NormalCost = util:getTupleValue(FishCfg,#fish_cfg.price,0),
+	case lists:keyfind(FishCfgID,1,FishBuyList) of
+		{_,Count} -> trunc(NormalCost*math:pow(1.18,Count+1));
+		_ -> trunc(NormalCost)
+	end.
