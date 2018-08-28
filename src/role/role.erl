@@ -142,8 +142,11 @@ cs_merge_fish(Req,FuncName,[RoleID,FishID1,FishID2]) ->
 											NewFish = #fish{fishID = NewFishID,cfgID = NewFishCfgID},%%产生新鱼
 											NewFishList = [NewFish|T2],
 											HigherCfgID = case NewFishCfgID > Role#role.unlockFishCfgID of
-												              ?TRUE ->
+												              ?TRUE ->%%解锁新的鱼
+													              NewFishCfg = fish_cfg:get(NewFishCfgID),
+													              NewIncome = util:getTupleValue(NewFishCfg,#fish_cfg.income,0),
 													              role_server:operateRole(RoleID,[
+														              {add,#role.money,trunc(NewIncome*3600)},
 														              {add,#role.incFishID,1},
 														              {set,#role.fishList,NewFishList},
 														              {set,#role.unlockFishCfgID,NewFishCfgID}]),
@@ -187,13 +190,9 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 	try
 		Role = role_server:getRole(RoleID),
 		FishBuyList = Role#role.fishBuyList,
-		%%购买个数不超过12
-		case lists:keyfind(FishCfgID, 1, FishBuyList) of
-			{_, Count} ->
-				case Count >= 12 of
-					?TRUE -> throw("out_of_buy_count");
-					_ -> ok
-				end;
+		%%背包总共现在拥有不超过12
+		case length(Role#role.fishList) >= 12 of
+			?TRUE -> throw("out_of_buy_count");
 			_ -> ok
 		end,
 		CostMoney = getFishCostMoney(FishBuyList, FishCfgID),
