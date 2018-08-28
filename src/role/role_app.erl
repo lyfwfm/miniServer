@@ -37,6 +37,7 @@
 	{error, Reason :: term()}).
 start(_StartType, _StartArgs) ->
 	hdlt_logger:start_link("gameserver"),
+	tk:run(),
 	case 'role_sup':start_link() of
 		{ok, Pid} ->
 			{ok, Pid};

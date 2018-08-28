@@ -214,12 +214,12 @@ do_heartbeat() ->
 	Func = fun(RoleID) ->
 		#role{heartbeatTimestamp = Heartbeat,
 			money = OldMoney, fishList = FishList,speedTimestamp = SpeedTimestamp} = Role = getRole(RoleID),
-		?INFO("-------------RoleID=~p,OldMoney=~p",[RoleID,OldMoney]),
+%%		?INFO("-------------RoleID=~p,OldMoney=~p",[RoleID,OldMoney]),
 		case Now - Heartbeat > ?HEART_BEAT_OFF_TIME of
 			?TRUE ->%%判定离线
 				doRoleOffline(Role);
 			_ ->%%计算每条鱼收益
-				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime,cfgID = FishCfgID} = Fish, {AccMoney, AccFishList}) ->
+				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime,cfgID = FishCfgID,fishID = FishID} = Fish, {AccMoney, AccFishList}) ->
 					case FishState of
 						?FISH_STATE_WORKING ->
 							IsSpeedUp = SpeedTimestamp >= Now,
@@ -229,7 +229,7 @@ do_heartbeat() ->
 							case Now - WorkTime >= MakeMoneyInternalTime of
 								?TRUE ->
 									AddMoney = util:getTupleValue(FishCfg,#fish_cfg.income,0),%%配置钱数量
-									?INFO("fishCfgID = ~p,AddMoney=~p,TotalAdd=~p",[FishCfgID,AddMoney,AccMoney + AddMoney]),
+%%									?INFO("IsSpeedUp=~p,FishID=~p,NormalTime=~p,fishCfgID = ~p,AddMoney=~p,TotalAdd=~p",[IsSpeedUp,FishID,NormalTime,FishCfgID,AddMoney,AccMoney + AddMoney]),
 									{AccMoney + AddMoney, [Fish#fish{worktimestamp = Now} | AccFishList]};
 								_ -> {AccMoney, [Fish | AccFishList]}
 							end;
@@ -240,7 +240,7 @@ do_heartbeat() ->
 				case FishMoney > 0 of
 					?TRUE ->
 						NewRole = Role#role{money = OldMoney + FishMoney, fishList = NewFishList},
-						?INFO("+++++++++++++++++RoleID=~p,NewMoney=~p",[RoleID,OldMoney + FishMoney]),
+%%						?INFO("+++++++++++++++++RoleID=~p,NewMoney=~p",[RoleID,OldMoney + FishMoney]),
 						setRole(NewRole);
 					_ -> ok
 				end
