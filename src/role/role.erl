@@ -78,14 +78,16 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 			role_server:insertRole(Role),
 			Msg=#sc_login{
 				userName = RoleName,
-				packageFishlist = [],
+				packageFishlist = [#pk_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
+					|| Fish <- Role#role.fishList],
 				gold = 0,
 				diamond = LoginGold,
 				offline_gold = 0,
 				login_days = 1,
-				is_login_reward = ?FALSE,
+				is_login_reward = LoginGold>0,
 				unlocked_fishes = Role#role.unlockFishCfgID,
-				fish_buy_list = [#pk_fish_buy{cfg_id = 1,buy_count = 1}]
+				fish_buy_list = [#pk_fish_buy{cfg_id = FishCfgID,buy_count = BuyCount}
+					|| {FishCfgID,BuyCount} <- Role#role.fishBuyList]
 			},
 			web_util:send(Req,FuncName,?SUCCESS,Msg)
 	end.
