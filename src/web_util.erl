@@ -10,6 +10,8 @@
 -author("chenlong").
 
 -include("common.hrl").
+-define(RESPOND(Req,Json),Req:respond({200,[{"Access-Control-Allow-Origin","*"},{"Content-Type","text/html"}], Json})).
+-define(OK(Req,Json),Req:ok({"text/html",Json})).
 
 %% API
 -export([route/1, send/2, send/4]).
@@ -18,16 +20,16 @@ send(Req, FuncName, Ret, {}) ->
 	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":{}}}",
 	Json2 = binary:list_to_bin(RetString),
 	[?INFO("Json = ~p",[Json2]) || FuncName =/= "heart_beat"],
-	Req:ok({"text/html", Json2});
+	?RESPOND(Req,Json2);
 send(Req, FuncName, Ret, Msg) ->
 	{ok, Json} = to_json(Msg),
 	%%{"name":Name},{"code":Code},{"data":Data}
 	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":",
 	Json2 = binary:list_to_bin(RetString ++ binary:bin_to_list(Json) ++ "}}"),
 	?INFO("Json = ~p",[Json2]),
-	Req:ok({"text/html", Json2}).
+	?RESPOND(Req,Json2).
 send(Req, Json) ->
-	Req:ok({"text/html", Json}).
+	?RESPOND(Req,Json).
 
 
 route(Req) ->
@@ -58,13 +60,13 @@ route(Req) ->
 				spawn_out(role,cs_offline,Req);
 			"get_rank" ->%%获取排行榜
 				spawn_out(role,cs_get_rank,Req);
-			_ -> Req:ok({"text/html", <<"no_match_function">>})
+			_ -> ?RESPOND(Req,<<"no_match_function">>)
 		end,
 		ok
 	catch
 		_:Why:Stacktrace ->
 			?ERR("route function error Why=~p, Stacktrace=~p", [Why,Stacktrace]),
-			Req:ok({"text/html", <<"error_function">>})
+			?RESPOND(Req,<<"error_function">>)
 
 	end.
 
