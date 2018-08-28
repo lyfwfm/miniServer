@@ -17,3 +17,6 @@
 %%排行榜
 [pk_rank,{userName,string},{gold,number},{rank,number},{head_url,string}].
 [sc_rank,{my_rank,number},{rank_list,list,pk_rank}].
+
+%%gm 24hours
+[sc_gm_24h,{addmoney,number}].

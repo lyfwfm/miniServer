@@ -13,9 +13,11 @@
 
 %% API
 -export([cs_login/3,cs_create_role/3,cs_put_fish/3,cs_remove_fish/3,cs_merge_fish/3,
-	cs_sell_fish/3,cs_buy_fish/3,cs_speed_up/3,cs_heart_beat/3,cs_offline/3,cs_get_rank/3]).
+	cs_sell_fish/3,cs_buy_fish/3,cs_speed_up/3,cs_heart_beat/3,cs_offline/3,cs_get_rank/3,
+	cs_gm_24h/3
+	]).
 
--export([sortAndSend/4]).
+-export([sortAndSend/4,isWorkingFishFull/1]).
 
 cs_login(Req,FuncName,[RoleID]) ->
 	case role_server:isRoleExist(RoleID) of
@@ -240,6 +242,25 @@ cs_get_rank(Req,FuncName,[RoleID]) ->
 	RoleList = ets:select(?ETS_ROLE,MatchSpec),
 	spawn(?MODULE,sortAndSend,[Req,FuncName,RoleID,RoleList]),
 	ok.
+
+cs_gm_24h(Req,FuncName,[RoleID]) ->
+	Role = role_server:getRole(RoleID),
+	IsWorkingFishFull = role:isWorkingFishFull(Role),
+	FishFunc = fun(#fish{state = FishState, cfgID = FishCfgID}) ->
+		case FishState of
+			?FISH_STATE_WORKING ->
+				FishCfg = fish_cfg:get(FishCfgID),
+				NormalTime = util:getTupleValue(FishCfg,#fish_cfg.time,4),
+				Income = util:getTupleValue(FishCfg,#fish_cfg.income,0),%%配置钱数量
+				OneDayMoney = (Income/NormalTime)*86400,
+				AddMoney = util:getTernaryValue(IsWorkingFishFull,OneDayMoney*1.1,OneDayMoney),%%满鱼工作的情况，增加10%的收益
+				AddMoney;
+			_ -> 0
+		end
+	           end,
+	FishMoney = trunc(lists:sum(lists:map(FishFunc, Role#role.fishList))),
+	role_server:operateRole(RoleID,[{add,#role.money,FishMoney}]),
+	web_util:send(Req,FuncName,?SUCCESS,#sc_gm_24h{addmoney = FishMoney}).
 
 %%%===================================================================
 %%% Internal functions

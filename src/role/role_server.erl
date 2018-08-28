@@ -219,6 +219,7 @@ do_heartbeat() ->
 			?TRUE ->%%判定离线
 				doRoleOffline(Role);
 			_ ->%%计算每条鱼收益
+				IsWorkingFishFull = role:isWorkingFishFull(Role),
 				FishFunc = fun(#fish{state = FishState, worktimestamp = WorkTime,cfgID = FishCfgID,fishID = FishID} = Fish, {AccMoney, AccFishList}) ->
 					case FishState of
 						?FISH_STATE_WORKING ->
@@ -228,7 +229,8 @@ do_heartbeat() ->
 							MakeMoneyInternalTime = util:getTernaryValue(IsSpeedUp,trunc(NormalTime/2),NormalTime),%%鱼的赚钱间隔时间
 							case Now - WorkTime >= MakeMoneyInternalTime of
 								?TRUE ->
-									AddMoney = util:getTupleValue(FishCfg,#fish_cfg.income,0),%%配置钱数量
+									Income = util:getTupleValue(FishCfg,#fish_cfg.income,0),%%配置钱数量
+									AddMoney = trunc(util:getTernaryValue(IsWorkingFishFull,Income*1.1,Income)),%%满鱼工作的情况，增加10%的收益
 %%									?INFO("IsSpeedUp=~p,FishID=~p,NormalTime=~p,fishCfgID = ~p,AddMoney=~p,TotalAdd=~p",[IsSpeedUp,FishID,NormalTime,FishCfgID,AddMoney,AccMoney + AddMoney]),
 									{AccMoney + AddMoney, [Fish#fish{worktimestamp = Now} | AccFishList]};
 								_ -> {AccMoney, [Fish | AccFishList]}

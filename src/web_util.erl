@@ -23,7 +23,6 @@ send(Req, FuncName, Ret, {}) ->
 	?RESPOND(Req,Json2);
 send(Req, FuncName, Ret, Msg) ->
 	{ok, Json} = to_json(Msg),
-	%%{"name":Name},{"code":Code},{"data":Data}
 	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":",
 	Json2 = binary:list_to_bin(RetString ++ binary:bin_to_list(Json) ++ "}}"),
 	?INFO("Json = ~p",[Json2]),
@@ -60,6 +59,9 @@ route(Req) ->
 				spawn_out(role,cs_offline,Req);
 			"get_rank" ->%%获取排行榜
 				spawn_out(role,cs_get_rank,Req);
+
+			"gm_24h" ->%%GM 快速获取24小时收益
+				spawn_out(role,cs_gm_24h,Req);
 			_ -> ?RESPOND(Req,<<"no_match_function">>)
 		end,
 		ok
