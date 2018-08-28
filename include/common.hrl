@@ -14,6 +14,7 @@
 -define(SUCCESS, "success").
 
 -define(ETS_ROLE, ets_role).%%进程保存所有玩家信息的ETS
+-define(ETS_ROLE_DOUBLE,ets_role_double).%%保存玩家翻倍收益信息{RoleID,[{CfgID,OriginMoney}]} CfgID为鱼配置ID，为0表示离线收益
 
 -define(FISH_STATE_IDLE,0).
 -define(FISH_STATE_WORKING,1).

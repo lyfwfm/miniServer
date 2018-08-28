@@ -69,6 +69,7 @@ start_link() ->
 init([]) ->
 	?INFO("~p begin init",[?MODULE]),
 	ets:new(?ETS_ROLE, [named_table, {keypos, #role.deviceID}, set, protected]),
+	ets:new(?ETS_ROLE_DOUBLE,[named_table,{keypos,1},set,public]),
 	erlang:send_after(?LOOP_TIME, self(), heartbeat),
 	?INFO("~p init success",[?MODULE]),
 	{ok, #state{}}.

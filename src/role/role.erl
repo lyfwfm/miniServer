@@ -14,6 +14,7 @@
 %% API
 -export([cs_login/3,cs_create_role/3,cs_put_fish/3,cs_remove_fish/3,cs_merge_fish/3,
 	cs_sell_fish/3,cs_buy_fish/3,cs_speed_up/3,cs_heart_beat/3,cs_offline/3,cs_get_rank/3,
+	cs_double/3,
 	cs_gm_24h/3
 	]).
 
@@ -41,6 +42,8 @@ cs_login(Req,FuncName,[RoleID]) ->
 				{set,#role.lastRewardLoginTimestamp,Now}
 			],
 			role_server:operateRole(RoleID, OperateList),
+			%%将离线收益加入翻倍ETS
+			insertRoleDouble(RoleID,0,OfflineMoney),
 			Msg=#sc_login{
 				userName = OldRole#role.roleName,
 				packageFishlist = [#pk_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
@@ -148,12 +151,14 @@ cs_merge_fish(Req,FuncName,[RoleID,FishID1,FishID2]) ->
 											HigherCfgID = case NewFishCfgID > Role#role.unlockFishCfgID of
 												              ?TRUE ->%%解锁新的鱼
 													              NewFishCfg = fish_cfg:get(NewFishCfgID),
-													              NewIncome = util:getTupleValue(NewFishCfg,#fish_cfg.income,0),
+													              NewPrice = util:getTupleValue(NewFishCfg,#fish_cfg.price,0),
 													              role_server:operateRole(RoleID,[
-														              {add,#role.money,trunc(NewIncome*3600)},
+														              {add,#role.money,NewPrice},
 														              {add,#role.incFishID,1},
 														              {set,#role.fishList,NewFishList},
 														              {set,#role.unlockFishCfgID,NewFishCfgID}]),
+													              %%将解锁新鱼奖励放入翻倍ETS
+													              insertRoleDouble(RoleID,NewFishCfgID,NewPrice),
 													              NewFishCfgID;
 												              _ ->
 													              role_server:operateRole(RoleID,[
@@ -225,7 +230,7 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 
 cs_speed_up(Req,FuncName,[RoleID]) ->
 	Now = util:now(),
-	SpeedTime = 180,%%todo
+	SpeedTime = 180,
 	role_server:operateRole(RoleID,[{set,#role.speedTimestamp,Now+SpeedTime}]),
 	web_util:send(Req,FuncName,?SUCCESS,{}).
 
@@ -243,6 +248,23 @@ cs_get_rank(Req,FuncName,[RoleID]) ->
 	spawn(?MODULE,sortAndSend,[Req,FuncName,RoleID,RoleList]),
 	ok.
 
+cs_double(Req,FuncName,[RoleID,FishCfgID]) ->
+	case ets:lookup(?ETS_ROLE_DOUBLE,RoleID) of
+		[{_,List}] ->
+			case lists:keytake(FishCfgID,1,List) of
+				{value,{_,Value},T} ->
+					role_server:operateRole(RoleID,[{add,#role.money,Value}]),
+					case length(T) > 0 of
+						?TRUE -> ets:insert(?ETS_ROLE_DOUBLE,{RoleID,T});
+						_ -> ets:delete(?ETS_ROLE_DOUBLE,RoleID)
+					end,
+					web_util:send(Req,FuncName,?SUCCESS,#sc_double{cfg_id = FishCfgID,addmoney = Value});
+				_ -> web_util:send(Req,FuncName,"no_such_double",{})
+			end;
+		_ -> web_util:send(Req,FuncName,"no_such_double",{})
+	end.
+
+%%----------------------------------------------------------------
 cs_gm_24h(Req,FuncName,[RoleID]) ->
 	Role = role_server:getRole(RoleID),
 	IsWorkingFishFull = role:isWorkingFishFull(Role),
@@ -339,4 +361,13 @@ getFishCostMoney(FishBuyList,FishCfgID) ->
 	case lists:keyfind(FishCfgID,1,FishBuyList) of
 		{_,Count} -> trunc(NormalCost*math:pow(1.18,Count+1));
 		_ -> trunc(NormalCost)
+	end.
+
+insertRoleDouble(RoleID,CfgID,OriginMoney) ->
+	case ets:lookup(?ETS_ROLE_DOUBLE,RoleID) of
+		[{_,List}] ->
+			NewList = lists:keystore(CfgID,1,List,{CfgID,OriginMoney}),
+			ets:insert(?ETS_ROLE_DOUBLE,{RoleID,NewList});
+		_ ->
+			ets:insert(?ETS_ROLE_DOUBLE,{RoleID,[{CfgID,OriginMoney}]})
 	end.

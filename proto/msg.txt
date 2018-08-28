@@ -17,6 +17,8 @@
 %%排行榜
 [pk_rank,{userName,string},{gold,number},{rank,number},{head_url,string}].
 [sc_rank,{my_rank,number},{rank_list,list,pk_rank}].
+%%看广告翻倍收益
+[sc_double,{cfg_id,number},{addmoney,number}].
 
 %%gm 24hours
 [sc_gm_24h,{addmoney,number}].

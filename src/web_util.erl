@@ -59,6 +59,8 @@ route(Req) ->
 				spawn_out(role,cs_offline,Req);
 			"get_rank" ->%%获取排行榜
 				spawn_out(role,cs_get_rank,Req);
+			"double" ->%%看完广告后，收益翻倍
+				spawn_out(role,cs_double,Req);
 
 			"gm_24h" ->%%GM 快速获取24小时收益
 				spawn_out(role,cs_gm_24h,Req);
