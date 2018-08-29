@@ -243,8 +243,7 @@ cs_offline(Req,FuncName,[RoleID]) ->
 	web_util:send(Req,FuncName,?SUCCESS,{}).
 
 cs_get_rank(Req,FuncName,[RoleID]) ->
-	MatchSpec = ets:fun2ms(fun(#role{deviceID = TRoleID,money = Money,roleName = RoleName}) -> {TRoleID,RoleName,Money} end),
-	RoleList = ets:select(?ETS_ROLE,MatchSpec),
+	RoleList = ets:tab2list(?ETS_ROLE_RANK),
 	spawn(?MODULE,sortAndSend,[Req,FuncName,RoleID,RoleList]),
 	ok.
 
@@ -351,7 +350,7 @@ sortAndSend(Req,FuncName,RoleID,RoleList) ->
 	{_,MsgRankList,MyRank}=lists:foldl(Func,{1,[],0},SortList),
 	Msg = #sc_rank{
 		my_rank = MyRank,
-		rank_list = MsgRankList
+		rank_list = lists:sublist(MsgRankList,1000)
 	},
 	web_util:send(Req,FuncName,?SUCCESS,Msg).
 
@@ -363,6 +362,8 @@ getFishCostMoney(FishBuyList,FishCfgID) ->
 		_ -> trunc(NormalCost)
 	end.
 
+insertRoleDouble(_RoleID,_CfgID,OriginMoney)when OriginMoney =< 0 ->
+	ok;
 insertRoleDouble(RoleID,CfgID,OriginMoney) ->
 	case ets:lookup(?ETS_ROLE_DOUBLE,RoleID) of
 		[{_,List}] ->

@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([getRole/1,setRole/1,isRoleExist/1]).
+-export([getRole/1,setRole/1,isRoleExist/1,getAllRoleRankInfo/0]).
 
 -define(GET_SQL_MAIL_NUM, 70).% the max num of mails get from sql once
 
@@ -45,6 +45,11 @@ setRole(Role) ->
 isRoleExist(RoleID)->
 	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
 	get_row(Sql) =/= [].
+
+getAllRoleRankInfo() ->
+	Sql = io_lib:format("select roleID,roleName,money from gRole",[]),
+	List = get_rows(Sql),
+	[{RoleID,binary_to_list(Name),Money} || [RoleID,Name,Money] <- List].
 %%-------------钓鱼------------------
 %%getPlayerFishing(RoleID) ->
 %%	Sql = io_lib:format("select * from gfishing where roleID = ~w",[RoleID]),
@@ -139,14 +144,6 @@ sql_execute_with_log(Statement, Args)	->
 			{error,{ErrCode,Reason2}};
 		Exception ->
 			?ERR("sql ****~p,~p*****execute with err:~p~n",[Statement,Args,Exception])
-	end.
-
-get_all(Sql) ->
-	case sql_execute_with_log(Sql) of
-		{ok,List} ->
-			List;
-		_ ->
-			[]
 	end.
 
 get_all(Statement, Sql) ->

@@ -31,7 +31,7 @@
 
 -record(state, {}).
 -define(LOOP_TIME, 1 * 1000).
--define(HEART_BEAT_OFF_TIME, 60*20).
+-define(HEART_BEAT_OFF_TIME, 30).
 
 %%%===================================================================
 %%% API
@@ -70,7 +70,9 @@ init([]) ->
 	?INFO("~p begin init",[?MODULE]),
 	ets:new(?ETS_ROLE, [named_table, {keypos, #role.deviceID}, set, protected]),
 	ets:new(?ETS_ROLE_DOUBLE,[named_table,{keypos,1},set,public]),
+	ets:new(?ETS_ROLE_RANK,[named_table,{keypos,1},set,protected]),
 	erlang:send_after(?LOOP_TIME, self(), heartbeat),
+	initRoleRank(),
 	?INFO("~p init success",[?MODULE]),
 	{ok, #state{}}.
 
@@ -189,6 +191,7 @@ getRoleProperty(RoleID, PropertyIndex) ->
 
 setRole(Role) ->
 	ets:insert(?ETS_ROLE, Role),
+	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,Role#role.money}),
 	spawn(db_sql,setRole,[Role]).
 
 %%inner
@@ -254,7 +257,9 @@ do_heartbeat() ->
 
 doRoleOffline(Role) ->
 	ets:delete(?ETS_ROLE, Role#role.deviceID),
-	spawn(db_sql,setRole,[Role#role{offlineTimestamp = util:now()}]).
+	Now = util:now(),
+%%	ets:insert(?ETS_ROLE,Role#role{offlineTimestamp = Now}),
+	spawn(db_sql,setRole,[Role#role{offlineTimestamp = Now}]).
 
 doOperateRole(RoleID, OperateList) ->
 	Role = getRole(RoleID),
@@ -270,3 +275,8 @@ doOperateRole(RoleID, OperateList) ->
 	       end,
 	NewRole = lists:foldl(Func, Role, OperateList),
 	setRole(NewRole).
+
+%%启动服务器，初始化排行榜
+initRoleRank() ->
+	List = db_sql:getAllRoleRankInfo(),
+	ets:insert(?ETS_ROLE_RANK,List).
