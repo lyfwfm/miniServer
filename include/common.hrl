@@ -26,7 +26,7 @@
 	worktimestamp=0%%每轮工作的起始时间戳
 }).
 -record(role,{
-	deviceID=0,%%玩家设备ID 作为唯一ID
+	deviceID="",%%玩家设备ID 作为唯一ID
 	roleName="",
 	money=0,
 	gold=0,

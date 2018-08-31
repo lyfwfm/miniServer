@@ -35,7 +35,7 @@ route(Req) ->
 	try
 		Json = mochiweb_request:parse_qs(Req),
 		FuncName = proplists:get_value("funcname", Json),
-		[?INFO("from client Json=~p",[Json]) || FuncName =/= "heart_beat"],
+		[?INFO("from client Json=~w",[Json]) || FuncName =/= "heart_beat"],
 		case FuncName of
 			"login" ->%%登陆，获取玩家数据
 				spawn_out(role,cs_login,Req);
