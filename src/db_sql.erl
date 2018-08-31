@@ -49,7 +49,7 @@ isRoleExist(RoleID)->
 getAllRoleRankInfo() ->
 	Sql = io_lib:format("select roleID,roleName,money from gRole",[]),
 	List = get_rows(Sql),
-	[{RoleID,binary_to_list(Name),Money} || [RoleID,Name,Money] <- List].
+	[{RoleID,binary_to_list(Name),Money} || [RoleID,Name,Money] <- List, Money > 0].
 %%-------------钓鱼------------------
 %%getPlayerFishing(RoleID) ->
 %%	Sql = io_lib:format("select * from gfishing where roleID = ~w",[RoleID]),

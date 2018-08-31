@@ -191,7 +191,6 @@ getRoleProperty(RoleID, PropertyIndex) ->
 
 setRole(Role) ->
 	ets:insert(?ETS_ROLE, Role),
-	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,Role#role.money}),
 	spawn(db_sql,setRole,[Role]).
 
 %%inner
@@ -247,7 +246,8 @@ do_heartbeat() ->
 					?TRUE ->
 						NewRole = Role#role{money = OldMoney + FishMoney, fishList = NewFishList},
 %%						?INFO("+++++++++++++++++RoleID=~p,NewMoney=~p",[RoleID,OldMoney + FishMoney]),
-						setRole(NewRole);
+						setRole(NewRole),
+						updateRankInfo(Role, FishMoney);
 					_ -> ok
 				end
 		end
@@ -265,6 +265,11 @@ doOperateRole(RoleID, OperateList) ->
 	Role = getRole(RoleID),
 	Func = fun({add, PropertyIndex, Value}, AccRole) ->
 		OldValue = element(PropertyIndex, AccRole),
+		%%这里处理增加的财富，因为财富榜是财富总榜不是当前的财富值
+		case PropertyIndex =:= #role.money of
+			?TRUE -> updateRankInfo(Role, Value);
+			_ -> ok
+		end,
 		setelement(PropertyIndex, AccRole, OldValue + Value);
 		({set, PropertyIndex, Value}, AccRole) ->
 			setelement(PropertyIndex, AccRole, Value);
@@ -280,3 +285,9 @@ doOperateRole(RoleID, OperateList) ->
 initRoleRank() ->
 	List = db_sql:getAllRoleRankInfo(),
 	ets:insert(?ETS_ROLE_RANK,List).
+
+%%这里处理增加的财富，因为财富榜是财富总榜不是当前的财富值
+updateRankInfo(Role, AddValue) ->
+	TRankOldValue = ets:lookup_element(?ETS_ROLE_RANK,Role#role.deviceID,3),
+	RankOldValue = util:getTernaryValue(is_integer(TRankOldValue),TRankOldValue,0),
+	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,RankOldValue+AddValue}).
