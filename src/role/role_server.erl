@@ -287,7 +287,8 @@ initRoleRank() ->
 	ets:insert(?ETS_ROLE_RANK,List).
 
 %%这里处理增加的财富，因为财富榜是财富总榜不是当前的财富值
-updateRankInfo(Role, AddValue) ->
+updateRankInfo(Role, AddValue)when is_integer(AddValue) andalso AddValue>0 ->
 	TRankOldValue = util:getEtsElement(?ETS_ROLE_RANK,Role#role.deviceID,3,0),
 	RankOldValue = util:getTernaryValue(is_integer(TRankOldValue),TRankOldValue,0),
-	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,RankOldValue+AddValue}).
+	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,RankOldValue+AddValue});
+updateRankInfo(_Role,_) -> ok.
