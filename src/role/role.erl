@@ -351,7 +351,7 @@ sortAndSend(Req,FuncName,RoleID,RoleList) ->
 	{_,MsgRankList,MyRank}=lists:foldl(Func,{1,[],0},SortList),
 	Msg = #sc_rank{
 		my_rank = MyRank,
-		rank_list = lists:sublist(MsgRankList,1000)
+		rank_list = lists:sublist(MsgRankList,100)
 	},
 	web_util:send(Req,FuncName,?SUCCESS,Msg).
 

@@ -108,7 +108,8 @@
 	make_proto/1,
 	tryString2int/1,
 	tryTerm2String/1,
-	getTupleValue/3
+	getTupleValue/3,
+	getEtsElement/4
 ]).
 
 
@@ -1123,3 +1124,10 @@ tryTerm2String(List)when is_list(List) -> List.
 getTupleValue(Tuple,Index,_DefaultValue)when is_tuple(Tuple) andalso size(Tuple) >= Index ->
 	element(Index,Tuple);
 getTupleValue(_,_,DefaultValue) -> DefaultValue.
+
+getEtsElement(Table,Key,Pos,DefaultValue) ->
+	try
+	    ets:lookup_element(Table,Key,Pos)
+	catch
+	    _:_  -> DefaultValue
+	end.

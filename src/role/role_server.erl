@@ -288,6 +288,6 @@ initRoleRank() ->
 
 %%这里处理增加的财富，因为财富榜是财富总榜不是当前的财富值
 updateRankInfo(Role, AddValue) ->
-	TRankOldValue = ets:lookup_element(?ETS_ROLE_RANK,Role#role.deviceID,3),
+	TRankOldValue = util:getEtsElement(?ETS_ROLE_RANK,Role#role.deviceID,3,0),
 	RankOldValue = util:getTernaryValue(is_integer(TRankOldValue),TRankOldValue,0),
 	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,RankOldValue+AddValue}).
