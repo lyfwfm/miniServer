@@ -61,7 +61,8 @@ cs_login(Req, FuncName, [RoleID]) ->
 			web_util:send(Req, FuncName, ?SUCCESS, Msg)
 	end.
 
-cs_create_role(Req, FuncName, [RoleID, TRoleName]) ->
+cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
+	RoleID = util:tryTerm2String(TRoleID),
 	RoleName = util:tryTerm2String(TRoleName),
 	case role_server:isRoleExist(RoleID) of
 		?TRUE -> web_util:send(Req, FuncName, "have_role", {});
@@ -443,7 +444,7 @@ getFishCostMoney(FishBuyList, FishCfgID) ->
 	FishCfg = fish_cfg:get(FishCfgID),
 	NormalCost = util:getTupleValue(FishCfg, #fish_cfg.price, 0),
 	case lists:keyfind(FishCfgID, 1, FishBuyList) of
-		{_, Count} -> trunc(NormalCost * math:pow(1.18, Count + 1));
+		{_, Count} -> trunc(NormalCost * math:pow(1.18, Count));
 		_ -> trunc(NormalCost)
 	end.
 

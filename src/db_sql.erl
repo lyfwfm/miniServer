@@ -19,7 +19,7 @@
 %%	lists:flatten(io_lib:format("~w_~w_~w", [TableName,Y,M])).
 
 getRole(RoleID) ->
-	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
+	Sql = io_lib:format("select * from gRole where roleID = ~s",[quote(RoleID)]),
 	case get_row(Sql) of
 		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList,
 			LoginTimestamp,OfflineTimestamp,LastRewardLoginTimestamp,SpeedTimestamp,
@@ -31,9 +31,9 @@ getRole(RoleID) ->
 		_ -> #role{deviceID = RoleID}
 	end.
 setRole(Role) ->
-	Sql = io_lib:format("replace into gRole values (~w,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w,~w,~w)",
+	Sql = io_lib:format("replace into gRole values (~s,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w,~w,~w)",
 		[
-			Role#role.deviceID,quote(Role#role.roleName),
+			quote(Role#role.deviceID),quote(Role#role.roleName),
 			Role#role.money,Role#role.gold,
 			to_bin(Role#role.fishList),Role#role.loginDays,
 			Role#role.unlockFishCfgID,to_bin(Role#role.fishBuyList),
@@ -43,7 +43,7 @@ setRole(Role) ->
 		]),
 	sql_execute_with_log(Sql).
 isRoleExist(RoleID)->
-	Sql = io_lib:format("select * from gRole where roleID = ~w",[RoleID]),
+	Sql = io_lib:format("select * from gRole where roleID = ~s",[quote(RoleID)]),
 	get_row(Sql) =/= [].
 
 getAllRoleRankInfo() ->

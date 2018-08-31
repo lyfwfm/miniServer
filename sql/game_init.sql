@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS `gRole`;
 CREATE TABLE `gRole` (
-  `roleID` bigint(11) unsigned NOT NULL COMMENT '玩家ID也是设备ID',
+  `roleID` varchar(100) NOT NULL COMMENT '玩家ID也是设备ID字符串类型',
   `roleName` varchar(100) NOT NULL COMMENT '玩家名字',
   `money` bigint(50) unsigned DEFAULT 0 COMMENT '金币',
   `gold` bigint(10) unsigned DEFAULT 0 COMMENT '砖石',
