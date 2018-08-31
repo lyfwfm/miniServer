@@ -1,10 +1,11 @@
 %%只定义服务器到客户端的协议
+%%有可能有中文的不能用string要用binary，并且在代码中，构建Msg时 中文要list_to_binary手动先转换成binary，可以参照sc_login的userName
 
 
 [pk_fish,{id,number},{cfg_id,number},{isWorking,boolean}].
 [pk_fish_buy,{cfg_id,number},{buy_count,number}].
 %%登陆
-[sc_login,{userName,string},{packageFishlist,list,pk_fish},{gold,number},{diamond,number},{offline_gold,number},{login_days,number},{is_login_reward,boolean},{unlocked_fishes,number},{fish_buy_list,list,pk_fish_buy}].
+[sc_login,{userName,binary},{packageFishlist,list,pk_fish},{gold,number},{diamond,number},{offline_gold,number},{login_days,number},{is_login_reward,boolean},{unlocked_fishes,number},{fish_buy_list,list,pk_fish_buy}].
 
 %%放鱼 不用数据
 %%收鱼 不用数据
@@ -15,7 +16,7 @@
 %%买鱼
 [sc_buy_fish,{cfg_id,number},{id,number}].
 %%排行榜
-[pk_rank,{userName,string},{gold,number},{rank,number},{head_url,string}].
+[pk_rank,{userName,binary},{gold,number},{rank,number},{head_url,string}].
 [sc_rank,{my_rank,number},{rank_list,list,pk_rank}].
 %%看广告翻倍收益
 [sc_double,{cfg_id,number},{addmoney,number}].

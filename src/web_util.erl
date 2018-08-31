@@ -10,7 +10,7 @@
 -author("chenlong").
 
 -include("common.hrl").
--define(RESPOND(Req,Json),Req:respond({200,[{"Access-Control-Allow-Origin","*"},{"Content-Type","text/html"}], Json})).
+-define(RESPOND(Req,Json),Req:respond({200,[{"Access-Control-Allow-Origin","*"},{"Content-Type","text/html;charset=utf-8"}], Json})).
 -define(OK(Req,Json),Req:ok({"text/html",Json})).
 
 %% API
@@ -19,13 +19,13 @@
 send(Req, FuncName, Ret, {}) ->
 	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":{}}}",
 	Json2 = binary:list_to_bin(RetString),
-	[?INFO("Json = ~p",[Json2]) || FuncName =/= "heart_beat"],
+	[?INFO("Json = ~s",[Json2]) || FuncName =/= "heart_beat"],
 	?RESPOND(Req,Json2);
 send(Req, FuncName, Ret, Msg) ->
 	{ok, Json} = to_json(Msg),
 	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":",
 	Json2 = binary:list_to_bin(RetString ++ binary:bin_to_list(Json) ++ "}}"),
-	?INFO("Json = ~p",[Json2]),
+	?INFO("Json = ~s",[Json2]),
 	?RESPOND(Req,Json2).
 send(Req, Json) ->
 	?RESPOND(Req,Json).

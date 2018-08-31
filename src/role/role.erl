@@ -45,7 +45,7 @@ cs_login(Req,FuncName,[RoleID]) ->
 			%%将离线收益加入翻倍ETS
 			insertRoleDouble(RoleID,0,OfflineMoney),
 			Msg=#sc_login{
-				userName = OldRole#role.roleName,
+				userName = list_to_binary(OldRole#role.roleName),
 				packageFishlist = [#pk_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
 					|| Fish <- OldRole#role.fishList],
 				gold = NewMoney,
@@ -61,7 +61,8 @@ cs_login(Req,FuncName,[RoleID]) ->
 			web_util:send(Req,FuncName,?SUCCESS,Msg)
 	end.
 
-cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
+cs_create_role(Req,FuncName,[RoleID,TRoleName]) ->
+	RoleName = util:tryTerm2String(TRoleName),
 	case role_server:isRoleExist(RoleID) of
 		?TRUE -> web_util:send(Req,FuncName,"have_role",{});
 		_ ->
@@ -82,7 +83,7 @@ cs_create_role(Req,FuncName,[RoleID,RoleName]) ->
 			},
 			role_server:insertRole(Role),
 			Msg=#sc_login{
-				userName = RoleName,
+				userName = list_to_binary(RoleName),
 				packageFishlist = [#pk_fish{id = Fish#fish.fishID,cfg_id = Fish#fish.cfgID,isWorking = Fish#fish.state=:=?FISH_STATE_WORKING}
 					|| Fish <- Role#role.fishList],
 				gold = 0,
@@ -341,7 +342,7 @@ sortAndSend(Req,FuncName,RoleID,RoleList) ->
 	Func = fun({TRoleID,RoleName,Money},{AccRank,AccList,AccMyRank}) ->
 		PlayerMsg = #pk_rank{
 			rank = AccRank,
-			userName = RoleName,
+			userName = list_to_binary(RoleName),
 			gold = Money,
 			head_url = ""
 		},

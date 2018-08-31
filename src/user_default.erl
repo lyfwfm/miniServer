@@ -11,6 +11,7 @@
 
 %% API
 -export([start/0,run/0,startAndRun/0]).
+-export([cl/0]).
 
 start() ->
 	tk:start().
@@ -22,3 +23,7 @@ startAndRun() ->
 	start(),
 	timer:sleep(5000),
 	run().
+
+%%清除log文件夹的所有日志
+cl() ->
+	filelib:fold_files("log",".+\.log",false,fun(FileName,_Acc) -> file:delete(FileName) end,ok).
