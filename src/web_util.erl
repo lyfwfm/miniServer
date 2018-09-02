@@ -84,13 +84,15 @@ getValueListFromJson(Json) ->
 %%	                   end, Keys),
 %%	?INFO("Json=~p,Value=~p,Keys=~p,Values=~p~n", [Json, Value, Keys, Values]),
 %%	Values.
-	Values = lists:map(fun({_KeyStr,ValueStr}) ->
-		util:tryString2int(ValueStr)
-	                   end, Json),
-	case length(Values) > 0 of
-		?TRUE -> tl(Values);
-		_ -> []
-	end.
+	Fun = fun({_KeyStr,ValueStr},{AccIndex,AccValues}) ->
+		if
+			AccIndex =:= 2 -> {AccIndex+1,[ValueStr|AccValues]};
+			AccIndex > 2 -> {AccIndex+1,[util:tryString2int(ValueStr)|AccValues]};
+			?TRUE -> {AccIndex+1,AccValues}
+		end
+		end,
+	{_,Values}=lists:foldl(Fun,{1,[]},Json),
+	lists:reverse(Values).
 
 spawn_out(Module,Function,Req) ->
 	Json = mochiweb_request:parse_qs(Req),

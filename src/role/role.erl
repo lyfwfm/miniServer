@@ -287,7 +287,8 @@ cs_heart_beat(Req, FuncName, [RoleID]) ->
 			_ -> throw("role_not_login")
 		end,
 		role_server:operateRole(RoleID, []),
-		web_util:send(Req, FuncName, ?SUCCESS, {})
+    Role = role_server:getRole(RoleID),
+		web_util:send(Req, FuncName, ?SUCCESS, #sc_heart_beat{money = Role#role.money})
 	catch
 		_:Error -> web_util:send(Req, FuncName, Error, {})
 	end.
@@ -424,18 +425,26 @@ isWorkingFishFull(#role{fishList = FishList}) ->
 
 sortAndSend(Req, FuncName, RoleID, RoleList) ->
 	SortList = lists:reverse(lists:keysort(3, RoleList)),
-	Func = fun({TRoleID, RoleName, Money}, {AccRank, AccList, AccMyRank}) ->
+	Func = fun({TRoleID, RoleName, Money}, {AccRank, AccList, AccMyRank, AccMyMoney}) ->
 		PlayerMsg = #pk_rank{
 			rank = AccRank,
 			userName = list_to_binary(RoleName),
 			gold = Money,
 			head_url = ""
 		},
-		{AccRank + 1, [PlayerMsg | AccList], util:getTernaryValue(TRoleID =:= RoleID, AccRank, AccMyRank)}
+		{AccRank + 1, [PlayerMsg | AccList],
+      util:getTernaryValue(TRoleID =:= RoleID, AccRank, AccMyRank),
+      util:getTernaryValue(TRoleID =:= RoleID, Money, AccMyMoney)}
 	       end,
-	{_, MsgRankList, MyRank} = lists:foldl(Func, {1, [], 0}, SortList),
+	{_, MsgRankList, MyRank,TMyMoney} = lists:foldl(Func, {1, [], 0, 0}, SortList),
+  MyMoney = case MyRank =< 0 of
+    ?TRUE ->
+      util:getEtsElement(?ETS_ROLE_RANK,RoleID,3,0);
+    _ -> TMyMoney
+  end,
 	Msg = #sc_rank{
 		my_rank = MyRank,
+    my_money = MyMoney,
 		rank_list = lists:sublist(MsgRankList, 100)
 	},
 	web_util:send(Req, FuncName, ?SUCCESS, Msg).
