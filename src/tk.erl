@@ -1,6 +1,6 @@
 -module(tk).
 
--export([start/0, run/0]).
+-export([start/0, run/0, startAndRun/0]).
 
 -export([web_loop/1, testJson/0]).
 %%-compile({parse_transform, ejson_trans}).
@@ -13,6 +13,10 @@
 	{boolean, "isSuccessful"}}).
 
 -include("common.hrl").
+
+startAndRun() ->
+  start(),
+  spawn_link(fun run/0).
 
 start() ->
 	StartFunc = fun(App, _Acc) ->
@@ -31,8 +35,12 @@ start() ->
 
 run() ->
 	Loopfun = fun(Req) -> ?MODULE:web_loop(Req) end,
-	Port = 8887,
-	mochiweb_http:start([{loop, Loopfun}, {port, Port}]).
+	Port = 80,
+  try
+	mochiweb_http:start([{loop, Loopfun}, {port, Port}])
+catch
+    _:Why:Stack->?ERR("Why=~p,Stack=~p",[Why,Stack])
+  end.
 
 web_loop(Req) ->
 		"/" ++ Path = Req:get(path),
