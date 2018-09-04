@@ -61,6 +61,8 @@ route(Req) ->
 				spawn_out(role,cs_get_rank,Req);
 			"double" ->%%看完广告后，收益翻倍
 				spawn_out(role,cs_double,Req);
+			"watch_vedio"->%%看视频，获得对应鱼的购买金钱
+				spawn_out(role,cs_watch_vedio,Req);
 
 			"gm_24h" ->%%GM 快速获取24小时收益
 				spawn_out(role,cs_gm_24h,Req);

@@ -25,7 +25,7 @@
 	terminate/2,
 	code_change/3]).
 
--export([getRole/1, getRoleProperty/2, isRoleExist/1,operateRole/2,insertRole/1,offlineRole/1]).
+-export([getRole/1, getRoleProperty/2, isRoleExist/1,operateRole/2,insertRole/1,offlineRole/1,isRoleEtsExist/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -178,7 +178,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%获取用户数据，如果ETS没有，则从数据库加载
 getRole(RoleID) ->
 	case ets:lookup(?ETS_ROLE, RoleID) of
-		[Role] -> Role;
+		[Role] ->Role;
 		_ ->
 			Role = db_sql:getRole(RoleID),
 			insertRole(Role),
@@ -200,10 +200,16 @@ isRoleExist(RoleID) ->
 			db_sql:isRoleExist(RoleID);
 		_ -> ?TRUE
 	end.
+isRoleEtsExist(RoleID)->
+	ets:member(?ETS_ROLE,RoleID).
 operateRole(RoleID,OperateList) ->
 	?SERVER ! {operateRole, RoleID, [{set,#role.heartbeatTimestamp,util:now()}]++OperateList}.
 insertRole(Role) ->
-	?SERVER ! {insertRole, Role}.
+	Self = self(),
+	case whereis(?SERVER) of
+		Self -> setRole(Role);
+		_ -> ?SERVER ! {insertRole, Role}
+	end.
 offlineRole(RoleID) ->
 	?SERVER ! {offlineRole, RoleID}.
 

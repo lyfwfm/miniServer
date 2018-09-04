@@ -14,11 +14,14 @@
 %% API
 -export([cs_login/3, cs_create_role/3, cs_put_fish/3, cs_remove_fish/3, cs_merge_fish/3,
 	cs_sell_fish/3, cs_buy_fish/3, cs_speed_up/3, cs_heart_beat/3, cs_offline/3, cs_get_rank/3,
-	cs_double/3,
+	cs_double/3,cs_watch_vedio/3,
 	cs_gm_24h/3
 ]).
 
 -export([sortAndSend/4, isWorkingFishFull/1]).
+
+-define(INIT_MONEY,5000).
+-define(MAX_VEDIO_COUNT,5).%%每日最多看视频次数
 
 cs_login(Req, FuncName, [RoleID]) ->
 	case role_server:isRoleExist(RoleID) of
@@ -73,7 +76,7 @@ cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
 				deviceID = RoleID,
 				roleName = RoleName,
 				loginDays = 1,
-				money = 0,
+				money = ?INIT_MONEY,
 				gold = LoginGold,
 				unlockFishCfgID = 1,
 				loginTimestamp = Now,
@@ -87,7 +90,7 @@ cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
 				userName = list_to_binary(RoleName),
 				packageFishlist = [#pk_fish{id = Fish#fish.fishID, cfg_id = Fish#fish.cfgID, isWorking = Fish#fish.state =:= ?FISH_STATE_WORKING}
 					|| Fish <- Role#role.fishList],
-				gold = 0,
+				gold = Role#role.money,
 				diamond = LoginGold,
 				offline_gold = 0,
 				login_days = 1,
@@ -101,7 +104,7 @@ cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
 
 cs_put_fish(Req, FuncName, [RoleID, FishID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -129,7 +132,7 @@ cs_put_fish(Req, FuncName, [RoleID, FishID]) ->
 
 cs_remove_fish(Req, FuncName, [RoleID, FishID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -151,7 +154,7 @@ cs_remove_fish(Req, FuncName, [RoleID, FishID]) ->
 
 cs_merge_fish(Req, FuncName, [RoleID, FishID1, FishID2]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -211,7 +214,7 @@ cs_merge_fish(Req, FuncName, [RoleID, FishID1, FishID2]) ->
 
 cs_sell_fish(Req, FuncName, [RoleID, FishID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -231,7 +234,7 @@ cs_sell_fish(Req, FuncName, [RoleID, FishID]) ->
 
 cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -268,7 +271,7 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 
 cs_speed_up(Req, FuncName, [RoleID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -282,20 +285,26 @@ cs_speed_up(Req, FuncName, [RoleID]) ->
 
 cs_heart_beat(Req, FuncName, [RoleID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
 		role_server:operateRole(RoleID, []),
     Role = role_server:getRole(RoleID),
-		web_util:send(Req, FuncName, ?SUCCESS, #sc_heart_beat{money = Role#role.money})
+			Ret = checkIsSameDay(Role),
+			NewRole = element(2,Ret),
+			Now = util:now(),
+		web_util:send(Req, FuncName, ?SUCCESS, #sc_heart_beat{
+			money = NewRole#role.money,
+			vedio_left_count = max(0,?MAX_VEDIO_COUNT-NewRole#role.vedioCount),
+			speed_left_time = max(0,NewRole#role.speedTimestamp-Now)})
 	catch
 		_:Error -> web_util:send(Req, FuncName, Error, {})
 	end.
 
 cs_offline(Req, FuncName, [RoleID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -307,7 +316,7 @@ cs_offline(Req, FuncName, [RoleID]) ->
 
 cs_get_rank(Req, FuncName, [RoleID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -320,7 +329,7 @@ cs_get_rank(Req, FuncName, [RoleID]) ->
 
 cs_double(Req, FuncName, [RoleID, FishCfgID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -342,10 +351,24 @@ cs_double(Req, FuncName, [RoleID, FishCfgID]) ->
 		_:Error -> web_util:send(Req, FuncName, Error, {})
 	end.
 
+cs_watch_vedio(Req, FuncName, [RoleID,FishCfgID]) ->
+	Role = role_server:getRole(RoleID),
+	case Role#role.vedioCount >= ?MAX_VEDIO_COUNT of
+		?TRUE -> web_util:send(Req,FuncName,"max_watch_count",{});
+		_ ->
+			FishCfg = fish_cfg:get(FishCfgID),
+			Price = util:getTupleValue(FishCfg, #fish_cfg.price, 0),
+			role_server:operateRole(RoleID,[
+				{add,#role.vedioCount,1},
+				{add,#role.money,Price}
+			]),
+			web_util:send(Req,FuncName,?SUCCESS,#sc_watch_vedio{addmoney = Price})
+	end.
+
 %%----------------------------------------------------------------
 cs_gm_24h(Req, FuncName, [RoleID]) ->
 	try
-		case role_server:isRoleExist(RoleID) of
+		case role_server:isRoleEtsExist(RoleID) of
 			?TRUE -> ok;
 			_ -> throw("role_not_login")
 		end,
@@ -466,4 +489,23 @@ insertRoleDouble(RoleID, CfgID, OriginMoney) ->
 			ets:insert(?ETS_ROLE_DOUBLE, {RoleID, NewList});
 		_ ->
 			ets:insert(?ETS_ROLE_DOUBLE, {RoleID, [{CfgID, OriginMoney}]})
+	end.
+
+%%return {IsSameDay,NewRole}
+checkIsSameDay(Role) ->
+	{LastDate, _} = util:seconds_to_datetime(Role#role.dayTimestamp),
+	NowDate = erlang:date(),
+	case NowDate =:= LastDate of
+		?TRUE -> {?TRUE,Role};%%还是同一天
+		_ ->%%玩家跨天
+			Now = util:now(),
+			role_server:operateRole(Role#role.deviceID,[
+				{set,#role.vedioCount,0},
+				{set, #role.dayTimestamp, Now}
+			]),
+			{?FALSE,
+				Role#role{
+					vedioCount = 0,
+					dayTimestamp = Now
+				}}
 	end.

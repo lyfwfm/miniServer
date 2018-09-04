@@ -21,7 +21,9 @@
 %%看广告翻倍收益
 [sc_double,{cfg_id,number},{addmoney,number}].
 %%心跳
-[sc_heart_beat,{money,number}].
+[sc_heart_beat,{money,number},{speed_left_time,number},{vedio_left_count,number}].
+%%观看视频，得鱼的购买金钱
+[sc_watch_vedio,{addmoney,number}].
 
 %%gm 24hours
 [sc_gm_24h,{addmoney,number}].
