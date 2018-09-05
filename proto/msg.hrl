@@ -12,9 +12,13 @@
 -json({sc_buy_fish,{number,"cfg_id"},{number,"id"}}).
 -record(pk_rank,{userName,gold,rank,head_url}).
 -json({pk_rank,{binary,"userName"},{number,"gold"},{number,"rank"},{string,"head_url"}}).
--record(sc_rank,{my_rank,rank_list}).
--json({sc_rank,{number,"my_rank"},{list,"rank_list",[{type,pk_rank}]}}).
+-record(sc_rank,{my_rank,my_money,rank_list}).
+-json({sc_rank,{number,"my_rank"},{number,"my_money"},{list,"rank_list",[{type,pk_rank}]}}).
 -record(sc_double,{cfg_id,addmoney}).
 -json({sc_double,{number,"cfg_id"},{number,"addmoney"}}).
+-record(sc_heart_beat,{money,speed_left_time,vedio_left_count}).
+-json({sc_heart_beat,{number,"money"},{number,"speed_left_time"},{number,"vedio_left_count"}}).
+-record(sc_watch_vedio,{addmoney}).
+-json({sc_watch_vedio,{number,"addmoney"}}).
 -record(sc_gm_24h,{addmoney}).
 -json({sc_gm_24h,{number,"addmoney"}}).

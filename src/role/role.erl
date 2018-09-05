@@ -22,6 +22,8 @@
 
 -define(INIT_MONEY,5000).
 -define(MAX_VEDIO_COUNT,5).%%每日最多看视频次数
+-define(MAX_BAG_FISH, 12).%%背包里最多同时存在的鱼数量
+-define(MAX_WORKING_FISH, 10).%%最多同时工作的鱼数量
 
 cs_login(Req, FuncName, [RoleID]) ->
 	case role_server:isRoleExist(RoleID) of
@@ -239,14 +241,28 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 			_ -> throw("role_not_login")
 		end,
 		Role = role_server:getRole(RoleID),
+		case FishCfgID > Role#role.unlockFishCfgID of
+			?TRUE -> throw("fish_not_unlock");
+			_ -> ok
+		end,
 		FishBuyList = Role#role.fishBuyList,
 		%%背包总共现在拥有不超过12
-		case length(Role#role.fishList) >= 12 of
+		case length(Role#role.fishList) >= ?MAX_BAG_FISH of
 			?TRUE -> throw("out_of_buy_count");
 			_ -> ok
 		end,
-		CostMoney = getFishCostMoney(FishBuyList, FishCfgID),
-		case Role#role.money >= CostMoney of
+		%%比当前解锁等级低3级的鱼需要花费 钻石购买
+		UnlockID = Role#role.unlockFishCfgID,
+		{IsEnough,OperateList}=case UnlockID=/=0 andalso UnlockID - FishCfgID >= 3 of
+				?TRUE ->%%砖石
+					CostGold = getBuyFishCost(FishBuyList, FishCfgID,?TRUE),
+					{Role#role.gold>=CostGold,[{dec,#role.gold,CostGold}]};
+				_ ->
+					CostMoney = getBuyFishCost(FishBuyList, FishCfgID,?FALSE),
+					{Role#role.money >= CostMoney,[{dec, #role.money, CostMoney}]}
+			end,
+
+		case IsEnough of
 			?TRUE ->
 				%%产生新鱼
 				NewFishID = Role#role.incFishID + 1,
@@ -255,9 +271,8 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 					                 {value, {_, OldCount}, T} -> [{FishCfgID, OldCount + 1} | T];
 					                 _ -> [{FishCfgID, 1} | Role#role.fishBuyList]
 				                 end,
-				role_server:operateRole(RoleID, [
+				role_server:operateRole(RoleID, OperateList++[
 					{add, #role.incFishID, 1},
-					{dec, #role.money, CostMoney},
 					{set, #role.fishList, [NewFish | Role#role.fishList]},
 					{set, #role.fishBuyList, NewFishBuyList}
 				]),
@@ -444,7 +459,7 @@ isWorkingFishFull(#role{fishList = FishList}) ->
 	WorkingList = lists:filter(fun(#fish{state = State}) ->
 		State =:= ?FISH_STATE_WORKING
 	                           end, FishList),
-	length(WorkingList) >= 10.
+	length(WorkingList) >= ?MAX_WORKING_FISH.
 
 sortAndSend(Req, FuncName, RoleID, RoleList) ->
 	SortList = lists:reverse(lists:keysort(3, RoleList)),
@@ -472,12 +487,18 @@ sortAndSend(Req, FuncName, RoleID, RoleList) ->
 	},
 	web_util:send(Req, FuncName, ?SUCCESS, Msg).
 
-getFishCostMoney(FishBuyList, FishCfgID) ->
+getBuyFishCost(FishBuyList, FishCfgID,IsGold) ->
 	FishCfg = fish_cfg:get(FishCfgID),
-	NormalCost = util:getTupleValue(FishCfg, #fish_cfg.price, 0),
-	case lists:keyfind(FishCfgID, 1, FishBuyList) of
-		{_, Count} -> trunc(NormalCost * math:pow(1.18, Count));
-		_ -> trunc(NormalCost)
+	case IsGold of
+		?TRUE ->
+			Level = util:getTupleValue(FishCfg, #fish_cfg.lvl, 0),
+			Level * 10;
+		_ ->
+			NormalCost = util:getTupleValue(FishCfg, #fish_cfg.price, 0),
+			case lists:keyfind(FishCfgID, 1, FishBuyList) of
+				{_, Count} -> trunc(NormalCost * math:pow(1.18, Count));
+				_ -> trunc(NormalCost)
+			end
 	end.
 
 insertRoleDouble(_RoleID, _CfgID, OriginMoney) when OriginMoney =< 0 ->
