@@ -1,0 +1,1 @@
+-record(reward,{day,diamond}).

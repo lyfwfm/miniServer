@@ -19,7 +19,7 @@
 send(Req, FuncName, Ret, {}) ->
 	RetString = "{\"ret\":{\"name\":\"" ++ FuncName ++ "\",\"code\":\"" ++ Ret ++ "\",\"data\":{}}}",
 	Json2 = binary:list_to_bin(RetString),
-	[?INFO("Json = ~s",[Json2]) || FuncName =/= "heart_beat"],
+	?INFO("Json = ~s",[Json2]),
 	?RESPOND(Req,Json2);
 send(Req, FuncName, Ret, Msg) ->
 	{ok, Json} = to_json(Msg),
@@ -35,7 +35,6 @@ route(Req) ->
 	try
 		Json = mochiweb_request:parse_qs(Req),
 		FuncName = proplists:get_value("funcname", Json),
-		[?INFO("from client Json=~w",[Json]) || FuncName =/= "heart_beat"],
 		case FuncName of
 			"login" ->%%登陆，获取玩家数据
 				spawn_out(role,cs_login,Req);
@@ -68,6 +67,7 @@ route(Req) ->
 				spawn_out(role,cs_gm_24h,Req);
 			_ -> ?RESPOND(Req,<<"no_match_function">>)
 		end,
+		[catch(?INFO("from client Json=~s",[Json])) || FuncName =/= "heart_beat"],
 		ok
 	catch
 		_:Why:Stacktrace ->

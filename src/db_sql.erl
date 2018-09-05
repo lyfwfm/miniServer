@@ -28,7 +28,9 @@ getRole(RoleID) ->
 				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList),
 				loginTimestamp = LoginTimestamp,offlineTimestamp = OfflineTimestamp,lastRewardLoginTimestamp = LastRewardLoginTimestamp,
 				speedTimestamp = SpeedTimestamp,incFishID = IncFishID,vedioCount = VedioCount,dayTimestamp = DayTimestamp};
-		_ -> #role{deviceID = RoleID}
+		_ ->
+			?ERR("db_sql getRole error RoleID = ~s",[RoleID]),
+			#role{deviceID = RoleID}
 	end.
 setRole(Role) ->
 	Sql = io_lib:format("replace into gRole values (~s,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w,~w,~w,~w,~w)",
