@@ -371,13 +371,25 @@ cs_watch_vedio(Req, FuncName, [RoleID,FishCfgID]) ->
 	case Role#role.vedioCount >= ?MAX_VEDIO_COUNT of
 		?TRUE -> web_util:send(Req,FuncName,"max_watch_count",{});
 		_ ->
-			FishCfg = fish_cfg:get(FishCfgID),
-			Price = util:getTupleValue(FishCfg, #fish_cfg.price, 0),
-			role_server:operateRole(RoleID,[
-				{add,#role.vedioCount,1},
-				{add,#role.money,Price}
-			]),
-			web_util:send(Req,FuncName,?SUCCESS,#sc_watch_vedio{addmoney = Price})
+			UnlockID = Role#role.unlockFishCfgID,
+			FishBuyList=Role#role.fishBuyList,
+			case UnlockID=/=0 andalso UnlockID - FishCfgID >= 3 of
+				?TRUE ->%%砖石
+					CostGold = getBuyFishCost(FishBuyList, FishCfgID,?TRUE),
+					role_server:operateRole(RoleID,[
+						{add,#role.vedioCount,1},
+						{add,#role.money,CostGold}
+					]),
+					web_util:send(Req,FuncName,?SUCCESS,#sc_watch_vedio{addmoney = 0,add_diamond = CostGold});
+				_ ->
+					CostMoney = getBuyFishCost(FishBuyList, FishCfgID,?FALSE),
+					role_server:operateRole(RoleID,[
+						{add,#role.vedioCount,1},
+						{add,#role.money,CostMoney}
+					]),
+					web_util:send(Req,FuncName,?SUCCESS,#sc_watch_vedio{addmoney = CostMoney,add_diamond = 0})
+			end,
+			ok
 	end.
 
 %%----------------------------------------------------------------

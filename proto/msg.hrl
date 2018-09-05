@@ -18,7 +18,7 @@
 -json({sc_double,{number,"cfg_id"},{number,"addmoney"}}).
 -record(sc_heart_beat,{money,speed_left_time,vedio_left_count}).
 -json({sc_heart_beat,{number,"money"},{number,"speed_left_time"},{number,"vedio_left_count"}}).
--record(sc_watch_vedio,{addmoney}).
--json({sc_watch_vedio,{number,"addmoney"}}).
+-record(sc_watch_vedio,{addmoney,add_diamond}).
+-json({sc_watch_vedio,{number,"addmoney"},{number,"add_diamond"}}).
 -record(sc_gm_24h,{addmoney}).
 -json({sc_gm_24h,{number,"addmoney"}}).
