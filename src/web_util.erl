@@ -67,7 +67,7 @@ route(Req) ->
 				spawn_out(role,cs_gm_24h,Req);
 			_ -> ?RESPOND(Req,<<"no_match_function">>)
 		end,
-		[catch(?INFO("from client Json=~s",[Json])) || FuncName =/= "heart_beat"],
+		[catch(?INFO("from client Json=~p",[Json])) || FuncName =/= "heart_beat"],
 		ok
 	catch
 		_:Why:Stacktrace ->
