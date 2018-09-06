@@ -253,7 +253,7 @@ cs_buy_fish(Req, FuncName, [RoleID, FishCfgID]) ->
 		end,
 		%%比当前解锁等级低3级的鱼需要花费 钻石购买
 		UnlockID = Role#role.unlockFishCfgID,
-		{IsEnough,OperateList}=case UnlockID=/=0 andalso FishCfgID=/=1 andalso UnlockID - FishCfgID >= 3 of
+		{IsEnough,OperateList}=case UnlockID=/=0 andalso FishCfgID=/=1 andalso UnlockID - FishCfgID =:= 3 of
 				?TRUE ->%%砖石
 					CostGold = getBuyFishCost(FishBuyList, FishCfgID,?TRUE),
 					{Role#role.gold>=CostGold,[{dec,#role.gold,CostGold}]};
@@ -373,7 +373,7 @@ cs_watch_vedio(Req, FuncName, [RoleID,FishCfgID]) ->
 		_ ->
 			UnlockID = Role#role.unlockFishCfgID,
 			FishBuyList=Role#role.fishBuyList,
-			case UnlockID=/=0 andalso FishCfgID=/=1 andalso UnlockID - FishCfgID >= 3 of
+			case UnlockID=/=0 andalso FishCfgID=/=1 andalso UnlockID - FishCfgID =:= 3 of
 				?TRUE ->%%砖石
 					CostGold = getBuyFishCost(FishBuyList, FishCfgID,?TRUE),
 					role_server:operateRole(RoleID,[
