@@ -425,29 +425,38 @@ cs_gm_24h(Req, FuncName, [RoleID]) ->
 %%%===================================================================
 %%计算离线收益
 calcOfflineMoney(Role) ->
-	Now = util:now(),
-	OfflineTime = Now - lists:max([Role#role.offlineTimestamp, Role#role.loginTimestamp, Role#role.heartbeatTimestamp]),
-	{SpeedTime, NormalTime} = case Role#role.speedTimestamp > Now of
-		                          ?TRUE ->
-			                          {OfflineTime, 0};
-		                          _ ->
-			                          TSpeedTime = max(0, Role#role.speedTimestamp - Role#role.offlineTimestamp),
-			                          {
-				                          TSpeedTime,
-				                          OfflineTime - TSpeedTime
-			                          }
-	                          end,
-	CalcFunc = fun(#fish{cfgID = CfgID, state = FishState}) ->
-		case FishState of
-			?FISH_STATE_WORKING ->
-				FishCfg = fish_cfg:get(CfgID),
-				EachMoney = util:getTupleValue(FishCfg, #fish_cfg.income, 0) / util:getTupleValue(FishCfg, #fish_cfg.time, 1),%%算出每秒产出
-				trunc(EachMoney * NormalTime + EachMoney * 2 * SpeedTime);
-			_ -> 0
-		end
-	           end,
-	TotalMoney = lists:sum(lists:map(CalcFunc, Role#role.fishList)),
-	TotalMoney.
+	try
+		Now = util:now(),
+		OfflineTime = Now - lists:max([Role#role.offlineTimestamp, Role#role.loginTimestamp, Role#role.heartbeatTimestamp]),
+		%%离线计算时间必须大于离线间隔
+		case OfflineTime >= ?HEART_BEAT_OFF_TIME of
+			?TRUE -> ok;
+			_ -> throw(ok)
+		end,
+		{SpeedTime, NormalTime} = case Role#role.speedTimestamp > Now of
+			                          ?TRUE ->
+				                          {OfflineTime, 0};
+			                          _ ->
+				                          TSpeedTime = max(0, Role#role.speedTimestamp - Role#role.offlineTimestamp),
+				                          {
+					                          TSpeedTime,
+					                          OfflineTime - TSpeedTime
+				                          }
+		                          end,
+		CalcFunc = fun(#fish{cfgID = CfgID, state = FishState}) ->
+			case FishState of
+				?FISH_STATE_WORKING ->
+					FishCfg = fish_cfg:get(CfgID),
+					EachMoney = util:getTupleValue(FishCfg, #fish_cfg.income, 0) / util:getTupleValue(FishCfg, #fish_cfg.time, 1),%%算出每秒产出
+					trunc(EachMoney * NormalTime + EachMoney * 2 * SpeedTime);
+				_ -> 0
+			end
+		           end,
+		TotalMoney = lists:sum(lists:map(CalcFunc, Role#role.fishList)),
+		TotalMoney
+	catch
+		_:_Why:_Stack -> 0
+	end.
 
 checkLoginDays(#role{loginDays = OldDays, offlineTimestamp = OffTime}) ->
 	{OffDate, _} = util:seconds_to_datetime(OffTime + ?ONE_DAY_SECONDS),
