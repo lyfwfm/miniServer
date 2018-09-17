@@ -23,17 +23,18 @@ getRole(RoleID) ->
 	case get_row(Sql) of
 		[_RoleID,Name,Money,Gold,FishList,LoginDays,UnlockFishCfgID,FishBuyList,
 			LoginTimestamp,OfflineTimestamp,LastRewardLoginTimestamp,SpeedTimestamp,
-			IncFishID,VedioCount,DayTimestamp] ->
+			IncFishID,VedioCount,DayTimestamp,HeadUrl] ->
 			#role{deviceID = RoleID,roleName = binary_to_list(Name),money = Money,gold = Gold,fishList = to_term(FishList),
 				loginDays = LoginDays,unlockFishCfgID = UnlockFishCfgID,fishBuyList = to_term(FishBuyList),
 				loginTimestamp = LoginTimestamp,offlineTimestamp = OfflineTimestamp,lastRewardLoginTimestamp = LastRewardLoginTimestamp,
-				speedTimestamp = SpeedTimestamp,incFishID = IncFishID,vedioCount = VedioCount,dayTimestamp = DayTimestamp};
+				speedTimestamp = SpeedTimestamp,incFishID = IncFishID,vedioCount = VedioCount,dayTimestamp = DayTimestamp,
+				headurl = binary_to_list(HeadUrl)};
 		_ ->
 			?ERR("db_sql getRole error RoleID = ~s",[RoleID]),
 			#role{deviceID = RoleID}
 	end.
 setRole(Role) ->
-	Sql = io_lib:format("replace into gRole values (~s,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w,~w,~w,~w,~w)",
+	Sql = io_lib:format("replace into gRole values (~s,~s,~w,~w,~s,~w,~w,~s,~w,~w,~w,~w,~w,~w,~w,~s)",
 		[
 			quote(Role#role.deviceID),quote(Role#role.roleName),
 			Role#role.money,Role#role.gold,
@@ -41,7 +42,8 @@ setRole(Role) ->
 			Role#role.unlockFishCfgID,to_bin(Role#role.fishBuyList),
 			Role#role.loginTimestamp,Role#role.offlineTimestamp,
 			Role#role.lastRewardLoginTimestamp,Role#role.speedTimestamp,
-			Role#role.incFishID,Role#role.vedioCount,Role#role.dayTimestamp
+			Role#role.incFishID,Role#role.vedioCount,Role#role.dayTimestamp,
+			quote(Role#role.headurl)
 		]),
 	sql_execute_with_log(Sql).
 isRoleExist(RoleID)->
@@ -49,9 +51,9 @@ isRoleExist(RoleID)->
 	get_row(Sql) =/= [].
 
 getAllRoleRankInfo() ->
-	Sql = io_lib:format("select roleID,roleName,money from gRole",[]),
+	Sql = io_lib:format("select roleID,roleName,money,headurl from gRole",[]),
 	List = get_rows(Sql),
-	[{RoleID,binary_to_list(Name),Money} || [RoleID,Name,Money] <- List, Money > 0].
+	[{binary_to_list(RoleID),binary_to_list(Name),Money,binary_to_list(HeadUrl)} || [RoleID,Name,Money,HeadUrl] <- List, Money > 0].
 %%-------------钓鱼------------------
 %%getPlayerFishing(RoleID) ->
 %%	Sql = io_lib:format("select * from gfishing where roleID = ~w",[RoleID]),

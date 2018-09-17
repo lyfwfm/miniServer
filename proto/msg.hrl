@@ -2,8 +2,8 @@
 -json({pk_fish,{number,"id"},{number,"cfg_id"},{boolean,"isWorking"}}).
 -record(pk_fish_buy,{cfg_id,buy_count}).
 -json({pk_fish_buy,{number,"cfg_id"},{number,"buy_count"}}).
--record(sc_login,{userName,packageFishlist,gold,diamond,offline_gold,login_days,is_login_reward,unlocked_fishes,fish_buy_list}).
--json({sc_login,{binary,"userName"},{list,"packageFishlist",[{type,pk_fish}]},{number,"gold"},{number,"diamond"},{number,"offline_gold"},{number,"login_days"},{boolean,"is_login_reward"},{number,"unlocked_fishes"},{list,"fish_buy_list",[{type,pk_fish_buy}]}}).
+-record(sc_login,{userName,packageFishlist,gold,diamond,offline_gold,login_days,is_login_reward,unlocked_fishes,fish_buy_list,head_url}).
+-json({sc_login,{binary,"userName"},{list,"packageFishlist",[{type,pk_fish}]},{number,"gold"},{number,"diamond"},{number,"offline_gold"},{number,"login_days"},{boolean,"is_login_reward"},{number,"unlocked_fishes"},{list,"fish_buy_list",[{type,pk_fish_buy}]},{binary,"head_url"}}).
 -record(sc_merge_fish,{id,cfg_id,unlock_cfg_id}).
 -json({sc_merge_fish,{number,"id"},{number,"cfg_id"},{number,"unlock_cfg_id"}}).
 -record(sc_sell_fish,{gold}).
@@ -11,7 +11,7 @@
 -record(sc_buy_fish,{cfg_id,id}).
 -json({sc_buy_fish,{number,"cfg_id"},{number,"id"}}).
 -record(pk_rank,{userName,gold,rank,head_url}).
--json({pk_rank,{binary,"userName"},{number,"gold"},{number,"rank"},{string,"head_url"}}).
+-json({pk_rank,{binary,"userName"},{number,"gold"},{number,"rank"},{binary,"head_url"}}).
 -record(sc_rank,{my_rank,my_money,rank_list}).
 -json({sc_rank,{number,"my_rank"},{number,"my_money"},{list,"rank_list",[{type,pk_rank}]}}).
 -record(sc_double,{cfg_id,addmoney}).

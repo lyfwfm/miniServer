@@ -295,5 +295,5 @@ initRoleRank() ->
 updateRankInfo(Role, AddValue)when is_integer(AddValue) andalso AddValue>0 ->
 	TRankOldValue = util:getEtsElement(?ETS_ROLE_RANK,Role#role.deviceID,3,0),
 	RankOldValue = util:getTernaryValue(is_integer(TRankOldValue),TRankOldValue,0),
-	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,RankOldValue+AddValue});
+	ets:insert(?ETS_ROLE_RANK,{Role#role.deviceID,Role#role.roleName,RankOldValue+AddValue,Role#role.headurl});
 updateRankInfo(_Role,_) -> ok.

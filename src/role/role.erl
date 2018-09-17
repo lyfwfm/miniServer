@@ -60,15 +60,17 @@ cs_login(Req, FuncName, [RoleID]) ->
 				is_login_reward = LoginGold > 0,
 				unlocked_fishes = OldRole#role.unlockFishCfgID,
 				fish_buy_list = [#pk_fish_buy{cfg_id = FishCfgID, buy_count = BuyCount}
-					|| {FishCfgID, BuyCount} <- OldRole#role.fishBuyList]
+					|| {FishCfgID, BuyCount} <- OldRole#role.fishBuyList],
+				head_url = list_to_binary(OldRole#role.headurl)
 
 			},
 			web_util:send(Req, FuncName, ?SUCCESS, Msg)
 	end.
 
-cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
+cs_create_role(Req, FuncName, [TRoleID, TRoleName,THeadUrl]) ->
 	RoleID = util:tryTerm2String(TRoleID),
 	RoleName = util:tryTerm2String(TRoleName),
+	HeadUrl = util:tryTerm2String(THeadUrl),
 	case role_server:isRoleExist(RoleID) of
 		?TRUE -> web_util:send(Req, FuncName, "have_role", {});
 		_ ->
@@ -85,7 +87,8 @@ cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
 				lastRewardLoginTimestamp = Now,
 				heartbeatTimestamp = Now,
 				fishList = [#fish{fishID = 1, cfgID = 1}],
-				fishBuyList = [{1, 1}]
+				fishBuyList = [{1, 1}],
+				headurl = HeadUrl
 			},
 			role_server:insertRole(Role),
 			Msg = #sc_login{
@@ -99,7 +102,9 @@ cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
 				is_login_reward = LoginGold > 0,
 				unlocked_fishes = Role#role.unlockFishCfgID,
 				fish_buy_list = [#pk_fish_buy{cfg_id = FishCfgID, buy_count = BuyCount}
-					|| {FishCfgID, BuyCount} <- Role#role.fishBuyList]
+					|| {FishCfgID, BuyCount} <- Role#role.fishBuyList],
+				head_url = list_to_binary(HeadUrl)
+
 			},
 			web_util:send(Req, FuncName, ?SUCCESS, Msg)
 	end.
@@ -484,12 +489,12 @@ isWorkingFishFull(#role{fishList = FishList}) ->
 
 sortAndSend(Req, FuncName, RoleID, RoleList) ->
 	SortList = lists:reverse(lists:keysort(3, RoleList)),
-	Func = fun({TRoleID, RoleName, Money}, {AccRank, AccList, AccMyRank, AccMyMoney}) ->
+	Func = fun({TRoleID, RoleName, Money,HeadUrl}, {AccRank, AccList, AccMyRank, AccMyMoney}) ->
 		PlayerMsg = #pk_rank{
 			rank = AccRank,
 			userName = list_to_binary(RoleName),
 			gold = Money,
-			head_url = ""
+			head_url = list_to_binary(HeadUrl)
 		},
 		{AccRank + 1, [PlayerMsg | AccList],
       util:getTernaryValue(TRoleID =:= RoleID, AccRank, AccMyRank),
@@ -504,7 +509,7 @@ sortAndSend(Req, FuncName, RoleID, RoleList) ->
 	Msg = #sc_rank{
 		my_rank = MyRank,
     my_money = MyMoney,
-		rank_list = lists:sublist(MsgRankList, 100)
+		rank_list = lists:sublist(lists:reverse(MsgRankList), 100)
 	},
 	web_util:send(Req, FuncName, ?SUCCESS, Msg).
 
