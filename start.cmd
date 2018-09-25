@@ -1,1 +1,1 @@
-"C:\\Program Files\\erl10.0.1\\bin\\werl.exe" -pa ebin deps/ebin app -s tk start
+"C:\\Program Files\\erl10.0.1\\bin\\werl.exe" -env ERL_MAX_ETS_TABLES 999999 -pa ebin deps/ebin app -s tk start

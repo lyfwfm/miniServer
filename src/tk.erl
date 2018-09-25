@@ -1,6 +1,6 @@
 -module(tk).
 
--export([start/0, run/0, startAndRun/0]).
+-export([start/0,stop/0, run/0, startAndRun/0]).
 
 -export([web_loop/1, testJson/0]).
 %%-compile({parse_transform, ejson_trans}).
@@ -13,6 +13,10 @@
 	{boolean, "isSuccessful"}}).
 
 -include("common.hrl").
+-define(APPS,[
+	sasl, kernel, stdlib, crypto, inets, asn1, public_key, ssl, compiler, xmerl, syntax_tools, jsx, emysql, db,
+	mochiweb, ejson,
+	role]).
 
 startAndRun() ->
   start(),
@@ -28,15 +32,20 @@ start() ->
 		end,
 		[]
 	            end,
-	lists:foldl(StartFunc, [], [
-		sasl, kernel, stdlib, crypto, inets, asn1, public_key, ssl, compiler, xmerl, syntax_tools, jsx, emysql, db,
-		mochiweb, ejson,
-		role]).
+	lists:foldl(StartFunc, [], ?APPS).
+
+stop() ->
+	StopFunc = fun(App) ->
+		application:stop(App)
+		end,
+	lists:foreach(StopFunc,[role,mochiweb]).
+%%	halt().
 
 run() ->
 	Loopfun = fun(Req) -> ?MODULE:web_loop(Req) end,
 	Port = 443,
   try
+%%	  mochiweb_http:start([{loop, Loopfun}, {port, Port}])
 	mochiweb_http:start([{loop, Loopfun}, {port, Port},{ssl,true},
 		{ssl_opts,[
 			{certfile,"H5C.pem"},

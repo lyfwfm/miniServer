@@ -67,6 +67,7 @@ start_link() ->
 	{stop, Reason :: term()} | ignore).
 init([]) ->
 	?INFO("~p begin init",[?MODULE]),
+	process_flag(trap_exit,true),
 	ets:new(?ETS_ROLE, [named_table, {keypos, #role.deviceID}, set, protected]),
 	ets:new(?ETS_ROLE_DOUBLE,[named_table,{keypos,1},set,public]),
 	ets:new(?ETS_ROLE_RANK,[named_table,{keypos,1},set,protected]),
@@ -155,6 +156,7 @@ handle_info(Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
 	State :: #state{}) -> term()).
 terminate(_Reason, _State) ->
+	io:format("**************role_server shutdown~n"),
 	ok.
 
 %%--------------------------------------------------------------------
