@@ -62,6 +62,9 @@ route(Req) ->
 				spawn_out(role,cs_double,Req);
 			"watch_vedio"->%%看视频，获得对应鱼的购买金钱
 				spawn_out(role,cs_watch_vedio,Req);
+			"client_data"->%%同步客户端数据
+				spawn_out(role,cs_client_data,Req);
+%%				spawn(role,cs_client_data,[Req,FuncName,[proplists:get_value("data", Json),proplists:get_value("data", Json)]]);
 
 			"gm_24h" ->%%GM 快速获取24小时收益
 				spawn_out(role,cs_gm_24h,Req);

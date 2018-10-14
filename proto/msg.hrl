@@ -2,6 +2,8 @@
 -json({pk_fish,{number,"id"},{number,"cfg_id"},{boolean,"isWorking"}}).
 -record(pk_fish_buy,{cfg_id,buy_count}).
 -json({pk_fish_buy,{number,"cfg_id"},{number,"buy_count"}}).
+-record(pk_fish_id_change,{old_id,new_id}).
+-json({pk_fish_id_change,{number,"old_id"},{number,"new_id"}}).
 -record(sc_login,{userName,packageFishlist,gold,diamond,offline_gold,login_days,is_login_reward,unlocked_fishes,fish_buy_list,head_url}).
 -json({sc_login,{binary,"userName"},{list,"packageFishlist",[{type,pk_fish}]},{number,"gold"},{number,"diamond"},{number,"offline_gold"},{number,"login_days"},{boolean,"is_login_reward"},{number,"unlocked_fishes"},{list,"fish_buy_list",[{type,pk_fish_buy}]},{binary,"head_url"}}).
 -record(sc_merge_fish,{id,cfg_id,unlock_cfg_id}).
@@ -20,5 +22,7 @@
 -json({sc_heart_beat,{number,"money"},{number,"speed_left_time"},{number,"vedio_left_count"}}).
 -record(sc_watch_vedio,{addmoney,add_diamond}).
 -json({sc_watch_vedio,{number,"addmoney"},{number,"add_diamond"}}).
+-record(sc_client_data,{gold,diamond,unlocked_fishes,packageFishlist,fish_buy_list,fish_id_change_list}).
+-json({sc_client_data,{number,"gold"},{number,"diamond"},{number,"unlocked_fishes"},{list,"packageFishlist",[{type,pk_fish}]},{list,"fish_buy_list",[{type,pk_fish_buy}]},{list,"fish_id_change_list",[{type,pk_fish_id_change}]}}).
 -record(sc_gm_24h,{addmoney}).
 -json({sc_gm_24h,{number,"addmoney"}}).

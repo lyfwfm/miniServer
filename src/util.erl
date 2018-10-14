@@ -3,7 +3,6 @@
 %% created 2013-2-18
 -module(util).
 -include("common.hrl").
-
 -export([
          pow/1,
 		 log/4,
@@ -109,7 +108,8 @@
 	tryString2int/1,
 	tryTerm2String/1,
 	getTupleValue/3,
-	getEtsElement/4
+	getEtsElement/4,
+	json2Term/1
 ]).
 
 
@@ -1131,3 +1131,38 @@ getEtsElement(Table,Key,Pos,DefaultValue) ->
 	catch
 	    _:_  -> DefaultValue
 	end.
+
+%%将json字符串尝试转换成erlang元素
+%%json的key值，不加入最终元素
+json2Term(String) ->
+	try
+		{ok,List,_}=erl_scan:string(String),
+		json2Term(List,"",key)
+	catch
+		_:Why:Stack ->
+			?ERR("json2Term String=~p,Why=~p,Stack=~p", [String, Why, Stack]),
+			[]
+	end.
+json2Term([], R, _) ->
+	{ok, Scan1, _} = erl_scan:string(R ++ "."),
+	{ok, P} = erl_parse:parse_exprs(Scan1),
+	{value, Value, _} = erl_eval:exprs(P, []),
+	Value;
+json2Term([Tuple | T], R, Flag) ->
+	{NewR, NewFlag} = case Tuple of
+		                            {'{', _} -> {R ++ "{", key};
+		                            {string, _, Str} -> case Flag of
+			                                                key -> {R, value};
+			                                                _ -> {R ++"\""++ Str++"\"", key}
+		                                                end;
+		                            {':', _} -> {R, value};
+		                            {',', _} -> {R++",", key};
+		                            {'[', _} -> {R ++ "[", value};
+		                            {integer, _, Int} -> {R ++ integer_to_list(Int), key};
+		                            {atom, _, Atom} -> {R ++ atom_to_list(Atom), key};
+		                            {'}', _} -> {R ++ "}", key};
+		                            {']', _} -> {R ++ "]", key};
+		                            {'-',_}->{R++"-",value};
+		                            Other -> ?ERR("json2Term Other=~p", [Other]), {R, Flag}
+	                            end,
+	json2Term(T, NewR, NewFlag).

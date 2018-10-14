@@ -14,7 +14,7 @@
 %% API
 -export([cs_login/3, cs_create_role/3, cs_put_fish/3, cs_remove_fish/3, cs_merge_fish/3,
 	cs_sell_fish/3, cs_buy_fish/3, cs_speed_up/3, cs_heart_beat/3, cs_offline/3, cs_get_rank/3,
-	cs_double/3,cs_watch_vedio/3,
+	cs_double/3,cs_watch_vedio/3,cs_client_data/3,
 	cs_gm_24h/3
 ]).
 
@@ -67,7 +67,8 @@ cs_login(Req, FuncName, [RoleID]) ->
 			web_util:send(Req, FuncName, ?SUCCESS, Msg)
 	end.
 
-cs_create_role(Req, FuncName, [TRoleID, TRoleName,THeadUrl]) ->
+cs_create_role(Req, FuncName, [TRoleID, TRoleName]) ->
+	THeadUrl="",
 	RoleID = util:tryTerm2String(TRoleID),
 	RoleName = util:tryTerm2String(TRoleName),
 	HeadUrl = util:tryTerm2String(THeadUrl),
@@ -397,6 +398,48 @@ cs_watch_vedio(Req, FuncName, [RoleID,FishCfgID]) ->
 			ok
 	end.
 
+%%同步客户端数据
+cs_client_data(Req, FuncName, [RoleID, Data]) ->
+	try
+%%		?INFO("Data=~p,formatData=~p",[Data,util:json2Term(Data)]),
+		%%是否存在这个玩家
+		case role_server:isRoleExist(RoleID) of
+			?TRUE -> ok;
+			_ -> throw("no_role")
+		end,
+		#role{incFishID = OldIncFishID} = role_server:getRole(RoleID),
+		{_Name,Money, Gold,_OffGold,_Logindays, DataFishList, UnlockID, DataBuyList} = util:json2Term(Data),
+		{NewIncFishID, FishList, FishBuyList, IDChangeList} = calcClientFishList(DataFishList, DataBuyList, OldIncFishID),
+		%%直接修改数据
+		OperateList = [
+			{set, #role.money, Money},
+			{set, #role.gold, Gold},
+			{set, #role.fishList, FishList},
+			{set, #role.unlockFishCfgID, UnlockID},
+			{set, #role.fishBuyList, FishBuyList},
+			{set, #role.incFishID, NewIncFishID}
+		],
+		role_server:operateRole(RoleID, OperateList),
+		Msg = #sc_client_data{
+			gold = Money,
+			diamond = Gold,
+			unlocked_fishes = UnlockID,
+			packageFishlist = [#pk_fish{id = Fish#fish.fishID, cfg_id = Fish#fish.cfgID, isWorking = Fish#fish.state =:= ?FISH_STATE_WORKING}
+				|| Fish <- FishList],
+			fish_buy_list = [#pk_fish_buy{cfg_id = FishCfgID, buy_count = BuyCount}
+				|| {FishCfgID, BuyCount} <- FishBuyList],
+			fish_id_change_list = [#pk_fish_id_change{old_id = OldID, new_id = NewID}
+				|| {OldID, NewID} <- IDChangeList]
+		},
+		web_util:send(Req, FuncName, ?SUCCESS, Msg)
+	catch
+		throw:Error -> web_util:send(Req, FuncName, Error, {});
+		_:Why:Stack ->
+			?ERR("cs_client_data Data=~p,Why=~p,Stack=~p", [Data, Why, Stack]),
+			web_util:send(Req, FuncName, "error", {}),
+			ok
+	end.
+
 %%----------------------------------------------------------------
 cs_gm_24h(Req, FuncName, [RoleID]) ->
 	try
@@ -556,3 +599,16 @@ checkIsSameDay(Role) ->
 					dayTimestamp = Now
 				}}
 	end.
+
+%%同步客户端数据，将客户端传送的鱼数据转换
+%%return {NewIncFishID,FishList,FishBuyList,IDChangeList}
+%%返回换算成服务器自增鱼ID
+calcClientFishList(DataFishList,DataBuyList,OldIncFishID) ->
+	Now=util:now(),
+	Func1 = fun({CfgID,_Lvl,OldID,IsWorking,_Buycount},{ID,TList,TIDChangeList}) ->
+		Fish=#fish{fishID = ID,cfgID = CfgID,state = util:getTernaryValue(IsWorking,?FISH_STATE_WORKING,?FISH_STATE_IDLE),worktimestamp = Now},
+		{ID+1,[Fish|TList],[{OldID,ID}|TIDChangeList]}
+		end,
+	{NewIncFishID,FishList,IDChangeList}=lists:foldl(Func1,{OldIncFishID+1,[],[]},DataFishList),
+	FishBuyList=[{util:tryString2int(TCfgID),BuyCount}||{TCfgID,BuyCount}<-DataBuyList,BuyCount>0],
+	{NewIncFishID,FishList,FishBuyList,IDChangeList}.

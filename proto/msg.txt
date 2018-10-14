@@ -4,6 +4,7 @@
 
 [pk_fish,{id,number},{cfg_id,number},{isWorking,boolean}].
 [pk_fish_buy,{cfg_id,number},{buy_count,number}].
+[pk_fish_id_change,{old_id,number},{new_id,number}].
 %%登陆
 [sc_login,{userName,binary},{packageFishlist,list,pk_fish},{gold,number},{diamond,number},{offline_gold,number},{login_days,number},{is_login_reward,boolean},{unlocked_fishes,number},{fish_buy_list,list,pk_fish_buy},{head_url,binary}].
 
@@ -24,6 +25,8 @@
 [sc_heart_beat,{money,number},{speed_left_time,number},{vedio_left_count,number}].
 %%观看视频，得鱼的购买金钱
 [sc_watch_vedio,{addmoney,number},{add_diamond,number}].
+%%客户端同步数据
+[sc_client_data,{gold,number},{diamond,number},{unlocked_fishes,number},{packageFishlist,list,pk_fish},{fish_buy_list,list,pk_fish_buy},{fish_id_change_list,list,pk_fish_id_change}].
 
 %%gm 24hours
 [sc_gm_24h,{addmoney,number}].
