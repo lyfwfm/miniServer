@@ -1163,6 +1163,7 @@ json2Term([Tuple | T], R, Flag) ->
 		                            {'}', _} -> {R ++ "}", key};
 		                            {']', _} -> {R ++ "]", key};
 		                            {'-',_}->{R++"-",value};
+		                            {float,_,Float} -> {R++integer_to_list(trunc(Float)),key};
 		                            Other -> ?ERR("json2Term Other=~p", [Other]), {R, Flag}
 	                            end,
 	json2Term(T, NewR, NewFlag).
