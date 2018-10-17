@@ -70,7 +70,10 @@ route(Req) ->
 				spawn_out(role,cs_gm_24h,Req);
 			_ -> ?RESPOND(Req,<<"no_match_function">>)
 		end,
-		[catch(?INFO("from client Json=~p",[Json])) || FuncName =/= "heart_beat"],
+			case FuncName of
+				"heart_beat" -> ok;
+				_ -> printJson(Json)
+			end,
 		ok
 	catch
 		_:Why:Stacktrace ->
@@ -103,3 +106,10 @@ spawn_out(Module,Function,Req) ->
 	Json = mochiweb_request:parse_qs(Req),
 	FuncName = proplists:get_value("funcname", Json),
 	spawn(Module,Function,[Req,FuncName,getValueListFromJson(Json)]).
+
+printJson(Json) ->
+	Func = fun({KeyStr,ValueStr},AccStr) ->
+		AccStr++"{"++KeyStr++","++ValueStr++"}\r\n"
+		end,
+	Str=lists:foldl(Func,"",Json),
+	catch(?INFO("from client client_data data=~s",[Str])).
